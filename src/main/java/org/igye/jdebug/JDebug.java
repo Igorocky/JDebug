@@ -4,10 +4,10 @@ import org.igye.jdebug.exceptions.JDebugException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Hello world!
@@ -17,21 +17,33 @@ public class JDebug {
     private static final int BUFF_LEN = 1024;
     private static final String HANDSHAKE_ANSWER = "JDWP-Handshake";
 
+    private static BlockingQueue inMessages;
+    private static BlockingQueue outMessages;
+
     public static void main(String[] args) {
         log.info("Start JDebug");
+
+//        int i = 500;
+//        System.out.println(Integer.toHexString(i));
+//        for (byte b : ByteArrays.intToBigEndianByteArray(i)) {
+//            System.out.format("0x%x ", b);
+//
+//        }
+        System.out.println(ByteArrays.fourByteArrayToLong(ByteArrays.intToBigEndianByteArray(4895)));
+
         Socket socket = null;
         try {
             socket = new Socket(args[0], Integer.parseInt(args[1]));
-            InputStreamReader in = new InputStreamReader(socket.getInputStream());
-            OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream());
-            out.write("JDWP-Handshake");
+            InputStream in = socket.getInputStream();
+            OutputStream out = socket.getOutputStream();
+            out.write("JDWP-Handshake".getBytes());
             out.flush();
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 log.error(e.getMessage(), e);
             }
-            char[] buf = new char[BUFF_LEN];
+            byte[] buf = new byte[BUFF_LEN];
             int bytesRead = in.read(buf, 0, HANDSHAKE_ANSWER.length());
             if (bytesRead != HANDSHAKE_ANSWER.length()) {
                 throw new JDebugException("bytesRead != HANDSHAKE_ANSWER.length()");
@@ -40,7 +52,8 @@ public class JDebug {
             if (!HANDSHAKE_ANSWER.equals(ans)) {
                 throw new JDebugException("!HANDSHAKE_ANSWER.equals(ans)");
             }
-            System.out.println("connected!");
+            System.out.println("Connected.");
+            inMessages = new LinkedBlockingQueue();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } catch (JDebugException e) {
