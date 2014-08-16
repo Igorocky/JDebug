@@ -31,7 +31,7 @@ public class ByteArrayTest {
         assertArrayEquals(res, arr2);
 
         res = ByteArrays.concat(arr1, arr2, arr1);
-        assertEquals(res.length, arr1.length*2 + arr2.length);
+        assertEquals(res.length, arr1.length * 2 + arr2.length);
         for (int i = 0; i < arr1.length; i++) {
             assertEquals(arr1[i], res[i]);
         }
@@ -79,5 +79,10 @@ public class ByteArrayTest {
         assertEquals(res[1], 2);
         assertEquals(res[2], 3);
         assertEquals(res[3], 4);
+    }
+
+    @Test
+    public void byteArrayToLong() {
+        assertEquals(255L, ByteArrays.byteArrayToLong(new byte[]{0, (byte) 0b11111111}, 1, 1));
     }
 }

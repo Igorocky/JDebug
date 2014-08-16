@@ -15,9 +15,13 @@ public class ByteArrays {
         if (arr.length != 4) {
             throw new IllegalArgumentException("arr.length != 4");
         }
+        return byteArrayToLong(arr, 0, 4);
+    }
+
+    public static long byteArrayToLong(byte[] arr, int offset, int length) {
         long res = 0;
-        for (byte b : arr) {
-            res = (res << 8) + (b & 0xff);
+        for (int i = 0; i < length; i++) {
+            res = (res << 8) + (arr[offset + i] & 0xff);
         }
         return res;
     }
@@ -25,34 +29,6 @@ public class ByteArrays {
     public static int fourByteArrayToInt(byte[] arr) {
         return (int) fourByteArrayToLong(arr);
     }
-
-//    public static byte[] concat(byte[] arr1, byte[] arr2) {
-//        if (arr1 != null && arr2 != null) {
-//            byte[] res = new byte[arr1.length + arr2.length];
-//            System.arraycopy(arr1, 0, res, 0, arr1.length);
-//            System.arraycopy(arr2, 0, res, arr1.length, arr2.length);
-//            return res;
-//        } else if (arr1 == null && arr2 == null) {
-//            return null;
-//        } else if (arr1 == null) {
-//            byte[] res = new byte[arr2.length];
-//            System.arraycopy(arr2, 0, res, 0, arr2.length);
-//            return res;
-//        } else {
-//            byte[] res = new byte[arr1.length];
-//            System.arraycopy(arr1, 0, res, 0, arr1.length);
-//            return res;
-//        }
-//    }
-//
-//    public static byte[] concat(byte[] arr1, byte[] arr2, byte[] arr3, byte[]... arrays) {
-//        byte[] res = concat(arr1, arr2);
-//        res = concat(res, arr3);
-//        for (int i = 0; i < arrays.length; i++) {
-//            res = concat(res, arrays[i]);
-//        }
-//        return res;
-//    }
 
     public static byte[] concat(byte[]... arrays) {
         byte[] res = new byte[totalLength(arrays)];

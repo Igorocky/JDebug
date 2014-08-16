@@ -4,7 +4,7 @@ import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataType;
 import org.igye.jdebug.messages.JdwpMessage;
 
-public class ReplyPacket implements JdwpMessage {
+public class ReplyPacket extends JdwpMessage {
     private long id;
     private int flags;
     private int errorCode;

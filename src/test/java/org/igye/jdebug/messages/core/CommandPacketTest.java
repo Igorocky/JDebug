@@ -1,6 +1,7 @@
 package org.igye.jdebug.messages.core;
 
 import org.igye.jdebug.ByteArrays;
+import org.igye.jdebug.messages.JdwpMessage;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ public class CommandPacketTest {
         assertEquals(res[5], (byte) 0);
         assertEquals(res[6], (byte) 0);
         assertEquals(res[7], (byte) 45);
-        assertEquals(res[8], (byte) 0);
+        assertEquals(res[8], (byte) JdwpMessage.COMMAND_FLAG);
         assertEquals(res[9], (byte) commandSet);
         assertEquals(res[10], (byte) command);
         assertEquals(res[11], data[0]);
@@ -57,7 +58,7 @@ public class CommandPacketTest {
         assertEquals(res[5], (byte) 0);
         assertEquals(res[6], (byte) 0);
         assertEquals(res[7], (byte) 45);
-        assertEquals(res[8], (byte) 0);
+        assertEquals(res[8], (byte) JdwpMessage.COMMAND_FLAG);
         assertEquals(res[9], (byte) commandSet);
         assertEquals(res[10], (byte) command);
     }

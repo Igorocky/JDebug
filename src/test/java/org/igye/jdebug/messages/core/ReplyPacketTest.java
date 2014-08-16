@@ -1,5 +1,6 @@
 package org.igye.jdebug.messages.core;
 
+import org.igye.jdebug.messages.JdwpMessage;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -32,7 +33,7 @@ public class ReplyPacketTest {
         assertEquals(res[5], (byte) 0);
         assertEquals(res[6], (byte) 0);
         assertEquals(res[7], (byte) 45);
-        assertEquals(res[8], (byte) 0x80);
+        assertEquals(res[8], (byte) JdwpMessage.REPLY_FLAG);
         assertEquals(res[9], (byte) 0);
         assertEquals(res[10], (byte) 7);
         assertEquals(res[11], data[0]);
@@ -53,7 +54,7 @@ public class ReplyPacketTest {
         assertEquals(res[5], (byte) 0);
         assertEquals(res[6], (byte) 0);
         assertEquals(res[7], (byte) 45);
-        assertEquals(res[8], (byte) 0x80);
+        assertEquals(res[8], (byte) JdwpMessage.REPLY_FLAG);
         assertEquals(res[9], (byte) 0);
         assertEquals(res[10], (byte) 7);
     }
