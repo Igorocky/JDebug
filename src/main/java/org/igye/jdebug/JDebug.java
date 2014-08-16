@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.exceptions.JDebugException;
 import org.igye.jdebug.messages.JdwpMessage;
+import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.impl.VersionCommand;
 import org.igye.jdebug.messages.impl.VersionReply;
 import org.slf4j.Logger;
@@ -73,8 +74,21 @@ public class JDebug {
             out.write(versionCommand.toByteArray());
             shortPause();
             JdwpMessage msg = JdwpDataTypeReader.readMessage(in);
-            System.out.println("msg.getId() = " + msg.getId());
-
+            while (true) {
+                if (msg instanceof ReplyPacket) {
+                    System.out.println("msg.getId() = " + msg.getId());
+                    if (msg.getId() == id) {
+                        VersionReply versionReply = new VersionReply((ReplyPacket) msg);
+                        System.out.println("versionReply.getDescription() = " + versionReply.getDescription());
+                        System.out.println("versionReply.getJdwpMajor() = " + versionReply.getJdwpMajor());
+                        System.out.println("versionReply.getJdwpMinor() = " + versionReply.getJdwpMinor());
+                        System.out.println("versionReply.getVmVersion() = " + versionReply.getVmVersion());
+                        System.out.println("versionReply.getVmName() = " + versionReply.getVmName());
+                        break;
+                    }
+                }
+                msg = JdwpDataTypeReader.readMessage(in);
+            }
 
             inMessages = new LinkedBlockingQueue();
         } catch (IOException e) {
