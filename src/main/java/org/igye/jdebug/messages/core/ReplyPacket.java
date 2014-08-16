@@ -1,4 +1,4 @@
-package org.igye.jdebug.messages;
+package org.igye.jdebug.messages.core;
 
 public class ReplyPacket {
     private long id;

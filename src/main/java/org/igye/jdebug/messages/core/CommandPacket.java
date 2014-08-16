@@ -1,6 +1,8 @@
-package org.igye.jdebug.messages;
+package org.igye.jdebug.messages.core;
 
-public class CommandPacket {
+import org.igye.jdebug.datatypes.JdwpDataType;
+
+public class CommandPacket implements JdwpDataType {
     private long id;
     private int flags;
     private int commandSet;
@@ -33,5 +35,10 @@ public class CommandPacket {
 
     public byte[] getData() {
         return data;
+    }
+
+    @Override
+    public byte[] toByteArray() {
+        return null;
     }
 }
