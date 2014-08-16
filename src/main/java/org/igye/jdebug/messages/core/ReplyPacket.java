@@ -2,9 +2,10 @@ package org.igye.jdebug.messages.core;
 
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataType;
+import org.igye.jdebug.messages.HasId;
 import org.igye.jdebug.messages.JdwpMessage;
 
-public class ReplyPacket extends JdwpMessage {
+public class ReplyPacket extends JdwpMessage implements HasId {
     private long id;
     private int flags;
     private int errorCode;
@@ -15,8 +16,10 @@ public class ReplyPacket extends JdwpMessage {
         this.flags = 0x80;
         this.errorCode = errorCode;
         this.data = data;
+        setCommandOrReplyPacket(this);
     }
 
+    @Override
     public long getId() {
         return id;
     }

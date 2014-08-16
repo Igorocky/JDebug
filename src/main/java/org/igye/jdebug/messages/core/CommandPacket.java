@@ -2,9 +2,10 @@ package org.igye.jdebug.messages.core;
 
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataType;
+import org.igye.jdebug.messages.HasId;
 import org.igye.jdebug.messages.JdwpMessage;
 
-public class CommandPacket extends JdwpMessage {
+public class CommandPacket extends JdwpMessage implements HasId {
     private long id;
     private int flags;
     private int commandSet;
@@ -18,8 +19,10 @@ public class CommandPacket extends JdwpMessage {
         this.commandSet = commandSet;
         this.command = command;
         this.data = data;
+        setCommandOrReplyPacket(this);
     }
 
+    @Override
     public long getId() {
         return id;
     }

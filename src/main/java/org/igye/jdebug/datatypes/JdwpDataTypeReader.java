@@ -1,5 +1,6 @@
 package org.igye.jdebug.datatypes;
 
+import org.igye.jdebug.ArrayOffset;
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.impl.JdwpString;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
@@ -47,5 +48,21 @@ public class JdwpDataTypeReader {
         byte[] stringArr = new byte[length];
         System.arraycopy(in, offset + 4, stringArr, 0, length);
         return new String(stringArr);
+    }
+
+    public static String readString(byte[] in, ArrayOffset offset) {
+        String res = readString(in, offset.getOffset());
+        offset.increase(4 + res.length());
+        return res;
+    }
+
+    public static int readInt(byte[] in, int offset) {
+        return (int) ByteArrays.byteArrayToLong(in, offset, 4);
+    }
+
+    public static int readInt(byte[] in, ArrayOffset offset) {
+        int res = readInt(in, offset.getOffset());
+        offset.increase(4);
+        return res;
     }
 }

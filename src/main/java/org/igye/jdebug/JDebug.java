@@ -1,7 +1,11 @@
 package org.igye.jdebug;
 
 import org.apache.commons.lang3.StringUtils;
+import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.exceptions.JDebugException;
+import org.igye.jdebug.messages.JdwpMessage;
+import org.igye.jdebug.messages.impl.VersionCommand;
+import org.igye.jdebug.messages.impl.VersionReply;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +55,7 @@ public class JDebug {
             OutputStream out = socket.getOutputStream();
             out.write("JDWP-Handshake".getBytes());
             out.flush();
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            }
+            shortPause();
             byte[] buf = new byte[BUFF_LEN];
             int bytesRead = in.read(buf, 0, HANDSHAKE_ANSWER.length());
             if (bytesRead != HANDSHAKE_ANSWER.length()) {
@@ -66,6 +66,16 @@ public class JDebug {
                 throw new JDebugException("!HANDSHAKE_ANSWER.equals(ans)");
             }
             System.out.println("Connected.");
+
+
+            VersionCommand versionCommand = new VersionCommand();
+            long id = versionCommand.getId();
+            out.write(versionCommand.toByteArray());
+            shortPause();
+            JdwpMessage msg = JdwpDataTypeReader.readMessage(in);
+            System.out.println("msg.getId() = " + msg.getId());
+
+
             inMessages = new LinkedBlockingQueue();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -81,5 +91,13 @@ public class JDebug {
             }
         }
         log.info("Finish JDebug");
+    }
+
+    private static void shortPause() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 }

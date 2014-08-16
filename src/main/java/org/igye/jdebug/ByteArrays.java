@@ -1,6 +1,5 @@
 package org.igye.jdebug;
 
-
 public class ByteArrays {
     public static byte[] intToBigEndianByteArray(int intVal) {
         return new byte[]{
@@ -23,6 +22,12 @@ public class ByteArrays {
         for (int i = 0; i < length; i++) {
             res = (res << 8) + (arr[offset + i] & 0xff);
         }
+        return res;
+    }
+
+    public static long byteArrayToLong(byte[] arr, ArrayOffset offset, int length) {
+        long res = byteArrayToLong(arr, offset.getOffset(), length);
+        offset.increase(length);
         return res;
     }
 
