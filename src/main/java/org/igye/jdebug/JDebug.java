@@ -1,5 +1,6 @@
 package org.igye.jdebug;
 
+import org.apache.commons.lang3.StringUtils;
 import org.igye.jdebug.exceptions.JDebugException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,19 @@ public class JDebug {
 //            System.out.format("0x%x ", b);
 //
 //        }
-        System.out.println(ByteArrays.fourByteArrayToLong(ByteArrays.intToBigEndianByteArray(4895)));
+//        System.out.println(ByteArrays.fourByteArrayToLong(ByteArrays.intToBigEndianByteArray(4895)));
+//        System.out.println("====================================");
+//        System.out.println(StringUtils.leftPad(Integer.toBinaryString(10), 32, "0"));
+//        for (int i = 0; i < 34; i++) {
+//            System.out.println(StringUtils.leftPad(i + "", 3, ' ') + ": " + StringUtils.leftPad(Integer.toBinaryString(-1 << i), 32, "0"));
+//        }
+
+//        int v = 0b11111111111111111111111111111111;
+//        System.out.println( v + " = " + StringUtils.leftPad(Integer.toBinaryString(v), 8, "0"));
+//        System.out.println( ((int)((byte)v)) + " = " + StringUtils.leftPad(Integer.toBinaryString(((int)((byte)v))), 8, "0"));
+
+//        System.out.println("====================================");
+
 
         Socket socket = null;
         try {

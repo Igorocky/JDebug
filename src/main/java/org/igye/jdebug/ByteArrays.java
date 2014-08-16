@@ -22,6 +22,10 @@ public class ByteArrays {
         return res;
     }
 
+    public static int fourByteArrayToInt(byte[] arr) {
+        return (int) fourByteArrayToLong(arr);
+    }
+
     public static byte[] concat(byte[] arr1, byte[] arr2) {
         byte[] res = new byte[arr1.length + arr2.length];
         System.arraycopy(arr1, 0, res, 0, arr1.length);
