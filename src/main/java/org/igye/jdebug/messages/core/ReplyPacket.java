@@ -1,14 +1,17 @@
 package org.igye.jdebug.messages.core;
 
-public class ReplyPacket {
+import org.igye.jdebug.ByteArrays;
+import org.igye.jdebug.datatypes.JdwpDataType;
+
+public class ReplyPacket implements JdwpDataType {
     private long id;
     private int flags;
     private int errorCode;
     private byte[] data;
 
-    public ReplyPacket(long id, int flags, int errorCode, byte[] data) {
+    public ReplyPacket(long id, int errorCode, byte[] data) {
         this.id = id;
-        this.flags = flags;
+        this.flags = 0x80;
         this.errorCode = errorCode;
         this.data = data;
     }
@@ -27,5 +30,16 @@ public class ReplyPacket {
 
     public byte[] getData() {
         return data;
+    }
+
+    @Override
+    public byte[] toByteArray() {
+        return ByteArrays.concat(
+                ByteArrays.intToBigEndianByteArray(11 + (data != null ? data.length : 0)),
+                ByteArrays.intToBigEndianByteArray((int) id),
+                new byte[] {(byte) flags},
+                new byte[] {(byte) (errorCode >>> 8), (byte) errorCode},
+                data
+        );
     }
 }
