@@ -1,5 +1,6 @@
 package org.igye.jdebug.messages.core;
 
+import org.apache.commons.codec.binary.Hex;
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataType;
 import org.igye.jdebug.messages.HasId;
@@ -45,5 +46,15 @@ public class ReplyPacket extends JdwpMessage implements HasId {
                 new byte[] {(byte) (errorCode >>> 8), (byte) errorCode},
                 data
         );
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder()
+                .append("Reply{id: ").append(id)
+                .append("; flags: ").append(flags)
+                .append("; errorCode: ").append(errorCode)
+                .append("; data: ").append(Hex.encodeHexString(data)).append("}")
+                .toString();
     }
 }

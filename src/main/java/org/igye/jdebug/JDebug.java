@@ -1,5 +1,6 @@
 package org.igye.jdebug;
 
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.exceptions.JDebugException;
@@ -23,10 +24,7 @@ public class JDebug {
     private static final int BUFF_LEN = 1024;
     private static final String HANDSHAKE_ANSWER = "JDWP-Handshake";
 
-    private static BlockingQueue inMessages;
-    private static BlockingQueue outMessages;
-
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         log.info("Start JDebug");
 
 //        int i = 500;
@@ -68,12 +66,16 @@ public class JDebug {
             }
             System.out.println("Connected.");
 
+            MessageReader messageReader = new MessageReader(in);
+            new Thread(messageReader).start();
+            MessageWriter messageWriter = new MessageWriter(out);
+            new Thread(messageWriter).start();
 
             VersionCommand versionCommand = new VersionCommand();
             long id = versionCommand.getId();
-            out.write(versionCommand.toByteArray());
+            messageWriter.putMessage(versionCommand);
             shortPause();
-            JdwpMessage msg = JdwpDataTypeReader.readMessage(in);
+            JdwpMessage msg = messageReader.takeMessage();
             while (true) {
                 if (msg instanceof ReplyPacket) {
                     System.out.println("msg.getId() = " + msg.getId());
@@ -87,10 +89,8 @@ public class JDebug {
                         break;
                     }
                 }
-                msg = JdwpDataTypeReader.readMessage(in);
+                msg = messageReader.takeMessage();
             }
-
-            inMessages = new LinkedBlockingQueue();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } catch (JDebugException e) {
