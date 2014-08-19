@@ -25,6 +25,7 @@ public class ReplyPacket extends JdwpMessage implements HasId {
         return id;
     }
 
+    @Override
     public int getFlags() {
         return flags;
     }

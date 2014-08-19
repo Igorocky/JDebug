@@ -1,8 +1,6 @@
 package org.igye.jdebug;
 
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.StringUtils;
-import org.igye.jdebug.datatypes.JdwpDataTypeReader;
+import org.igye.jdebug.debugprocessors.DebugProcessorTraceMethods;
 import org.igye.jdebug.exceptions.JDebugException;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.igye.jdebug.messages.core.ReplyPacket;
@@ -13,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Hello world!
@@ -67,11 +63,21 @@ public class JDebug {
             System.out.println("Connected.");
 
             MessageReader messageReader = new MessageReader(in);
-            new Thread(messageReader).start();
-            MessageWriter messageWriter = new MessageWriter(out);
-            new Thread(messageWriter).start();
+            Thread msgReaderThread = new Thread(messageReader);
+            msgReaderThread.start();
 
-            VersionCommand versionCommand = new VersionCommand();
+            MessageWriter messageWriter = new MessageWriter(out);
+            Thread msgWriterThread = new Thread(messageWriter);
+            msgWriterThread.start();
+
+            DebugProcessor proc = new DebugProcessorTraceMethods();
+            proc.setWriterAndReader(messageWriter, messageReader);
+            proc.run();
+
+            msgReaderThread.interrupt();
+            msgWriterThread.interrupt();
+
+            /*VersionCommand versionCommand = new VersionCommand();
             long id = versionCommand.getId();
             messageWriter.putMessage(versionCommand);
             shortPause();
@@ -90,7 +96,7 @@ public class JDebug {
                     }
                 }
                 msg = messageReader.takeMessage();
-            }
+            }*/
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } catch (JDebugException e) {

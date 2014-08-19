@@ -1,5 +1,10 @@
 package org.igye.jdebug;
 
+import org.igye.jdebug.messages.RepresentableAsArrayOfBytes;
+
+import java.util.ArrayList;
+import java.util.List;
+
 public class ByteArrays {
     public static byte[] intToBigEndianByteArray(int intVal) {
         return new byte[]{
@@ -55,5 +60,13 @@ public class ByteArrays {
             }
         }
         return res;
+    }
+
+    public static byte[] toByteArray(RepresentableAsArrayOfBytes... elems) {
+        ArrayList<byte[]> arrays = new ArrayList<>();
+        for (RepresentableAsArrayOfBytes elem : elems) {
+            arrays.add(elem.toByteArray());
+        }
+        return concat((byte[][]) arrays.toArray());
     }
 }

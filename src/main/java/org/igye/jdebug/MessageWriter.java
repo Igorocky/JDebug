@@ -43,7 +43,9 @@ public class MessageWriter implements Runnable {
         }
     }
 
-    public void putMessage(JdwpMessage msg) throws InterruptedException {
+    public long putMessage(JdwpMessage msg) throws InterruptedException {
+        long res = msg.getId();
         outMessages.put(msg);
+        return res;
     }
 }

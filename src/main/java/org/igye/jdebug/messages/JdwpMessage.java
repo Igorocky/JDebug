@@ -5,7 +5,7 @@ import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.ReplyPacket;
 
-public abstract class JdwpMessage implements HasId {
+public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes {
     public static final int COMMAND_FLAG = 0;
     public static final int REPLY_FLAG = 0x80;
 
@@ -30,6 +30,7 @@ public abstract class JdwpMessage implements HasId {
         }
     }
 
+    @Override
     public byte[] toByteArray() {
         return getCommandOrReplyPacket().toByteArray();
     }
@@ -37,6 +38,10 @@ public abstract class JdwpMessage implements HasId {
     @Override
     public long getId() {
         return getCommandOrReplyPacket().getId();
+    }
+
+    public int getFlags() {
+        return getCommandOrReplyPacket().getFlags();
     }
 
     protected String readString() {

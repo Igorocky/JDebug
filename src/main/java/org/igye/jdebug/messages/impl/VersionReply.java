@@ -6,6 +6,7 @@ import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.datatypes.impl.JdwpString;
 import org.igye.jdebug.messages.HasId;
 import org.igye.jdebug.messages.JdwpMessage;
+import org.igye.jdebug.messages.constants.JdwpError;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.MessageIdGenerator;
 import org.igye.jdebug.messages.core.ReplyPacket;
@@ -21,11 +22,13 @@ public class VersionReply extends JdwpMessage {
     public VersionReply(ReplyPacket replyPacket) {
         setCommandOrReplyPacket(replyPacket);
         errorCode = replyPacket.getErrorCode();
-        description = readString();
-        jdwpMajor = readInt();
-        jdwpMinor = readInt();
-        vmVersion = readString();
-        vmName = readString();
+        if (errorCode == JdwpError.NONE.getCode()) {
+            description = readString();
+            jdwpMajor = readInt();
+            jdwpMinor = readInt();
+            vmVersion = readString();
+            vmName = readString();
+        }
     }
 
     public int getErrorCode() {

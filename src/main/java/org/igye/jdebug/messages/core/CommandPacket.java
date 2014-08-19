@@ -28,6 +28,7 @@ public class CommandPacket extends JdwpMessage implements HasId {
         return id;
     }
 
+    @Override
     public int getFlags() {
         return flags;
     }
