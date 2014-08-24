@@ -36,6 +36,18 @@ public class ByteArrays {
         return res;
     }
 
+    public static byte[] byteArrayToByteArray(byte[] arr, int offset, int length) {
+        byte[] res = new byte[length];
+        System.arraycopy(arr, offset, res, 0, length);
+        return res;
+    }
+
+    public static byte[] byteArrayToByteArray(byte[] arr, ArrayOffset offset, int length) {
+        byte[] res = byteArrayToByteArray(arr, offset.getOffset(), length);
+        offset.increase(length);
+        return res;
+    }
+
     public static int fourByteArrayToInt(byte[] arr) {
         return (int) fourByteArrayToLong(arr);
     }
@@ -64,9 +76,15 @@ public class ByteArrays {
 
     public static byte[] toByteArray(RepresentableAsArrayOfBytes... elems) {
         ArrayList<byte[]> arrays = new ArrayList<>();
-        for (RepresentableAsArrayOfBytes elem : elems) {
-            arrays.add(elem.toByteArray());
+        if (elems != null) {
+            for (RepresentableAsArrayOfBytes elem : elems) {
+                if (elem != null) {
+                    arrays.add(elem.toByteArray());
+                }
+            }
+            return concat((byte[][]) arrays.toArray());
+        } else {
+            return null;
         }
-        return concat((byte[][]) arrays.toArray());
     }
 }

@@ -20,7 +20,9 @@ public class SetCommand extends JdwpMessage {
                         ByteArrays.concat(
                                 new byte[]{(byte) eventKind.getCode()},
                                 new byte[]{(byte) suspendPolicy.getCode()},
-                                ByteArrays.intToBigEndianByteArray(modifiers.length),
+                                ByteArrays.intToBigEndianByteArray(
+                                        modifiers == null ? 0 : modifiers.length
+                                ),
                                 ByteArrays.toByteArray(modifiers)
                         )
                 )

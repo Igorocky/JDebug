@@ -31,4 +31,13 @@ public enum EventKind {
     public int getCode() {
         return code;
     }
+
+    public static EventKind getEventKindByCode(int code) {
+        for (EventKind eventKind : values()) {
+            if (eventKind.getCode() == code) {
+                return eventKind;
+            }
+        }
+        return null;
+    }
 }

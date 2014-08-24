@@ -8,7 +8,6 @@ import java.io.InputStream;
 
 public final class JdwpString implements JdwpDataType {
     private String value;
-    private byte[] byteArray;
 
     public JdwpString(String value) {
         this.value = value;

@@ -29,4 +29,13 @@ public enum Tag {
     public int getCode() {
         return code;
     }
+
+    public static Tag getTagByCode(int code) {
+        for (Tag tag : values()) {
+            if (tag.getCode() == code) {
+                return tag;
+            }
+        }
+        return null;
+    }
 }
