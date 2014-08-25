@@ -23,26 +23,10 @@ import java.nio.ByteOrder;
 public class JdwpDataTypeReader {
     public static JdwpMessage readMessage(DataInputStream in) throws IOException {
         byte[] lengthArr = new byte[4];
-        /*int bytesRead = */in.readFully(lengthArr);
-        /*if (bytesRead == -1) {
-            throw new EndOfStreamException("End of stream in JdwpDataTypeReader.readMessage() [1]");
-        }
-        if (bytesRead != lengthArr.length) {
-            throw new IOException("bytesRead != lengthArr.length " +
-                    "(bytesRead = " + bytesRead + ", lengthArr.length = " + lengthArr.length
-                    + ")");
-        }*/
+        in.readFully(lengthArr);
         int length = (int) ByteArrays.fourByteArrayToLong(lengthArr);
         byte[] bytes = new byte[length - lengthArr.length];
-        /*bytesRead = */in.readFully(bytes);
-        /*if (bytesRead == -1) {
-            throw new EndOfStreamException("End of stream in JdwpDataTypeReader.readMessage() [2]");
-        }
-        if (bytesRead != bytes.length) {
-            throw new IOException("bytesRead != lengthArr.length " +
-                    "(bytesRead = " + bytesRead + ", lengthArr.length = " + lengthArr.length
-                    + ")");
-        }*/
+        in.readFully(bytes);
         byte[] data = length == 11 ? null : new byte[length - 11];
         if (data != null) {
             System.arraycopy(bytes, 7, data, 0, data.length);

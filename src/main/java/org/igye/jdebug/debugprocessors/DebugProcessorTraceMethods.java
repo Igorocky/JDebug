@@ -30,7 +30,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private List<CommandPacket> commandsBuf = new ArrayList<>();
 
     private Map<ObjectId, String> threadNames = new HashMap<>();
-    private Map<ObjectId, ClassInfo> allClasses = new HashMap<>();
+    private Map<ObjectId, String> classNames = new HashMap<>();
 
     @Override
     public void run() {
@@ -139,7 +139,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private String getThreadName(ObjectId threadId) throws InterruptedException {
         String res = threadNames.get(threadId);
         if (res == null) {
-            res= new ThreadNameReply(
+            res = new ThreadNameReply(
                     getReplyById(
                             msgWriter.putMessage(
                                     new ThreadNameCommand(threadId)
@@ -152,25 +152,18 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     }
 
     private String getClassName(ObjectId classId) throws InterruptedException {
-        ClassInfo res = allClasses.get(classId);
+        String res = classNames.get(classId);
         if (res == null) {
-            ClassInfo[] classes = new AllClassesReply(
+            res= new SignatureReply(
                     getReplyById(
                             msgWriter.putMessage(
-                                    new AllClassesCommand()
+                                    new SignatureCommand(classId)
                             )
                     )
-            ).getClasses();
-            allClasses.clear();
-            for (ClassInfo clazz : classes) {
-                allClasses.put(clazz.getTypeId(), clazz);
-            }
-            res = allClasses.get(classId);
+            ).getSignature();
+            classNames.put(classId, res);
         }
-        if (res == null) {
-            throw new JDebugRuntimeException("res == null");
-        }
-        return res.getSignature();
+        return res;
     }
 
     @Override

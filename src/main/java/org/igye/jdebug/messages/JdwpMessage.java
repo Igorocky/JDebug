@@ -3,6 +3,8 @@ package org.igye.jdebug.messages;
 import org.igye.jdebug.ArrayOffset;
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
+import org.igye.jdebug.exceptions.JDebugRuntimeException;
+import org.igye.jdebug.messages.constants.JdwpError;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.impl.ClassInfo;
@@ -25,6 +27,9 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
             this.commandOrReplyPacket = commandOrReplyPacket;
             data = ((CommandPacket)commandOrReplyPacket).getData();
         } else if (commandOrReplyPacket.getClass() == ReplyPacket.class) {
+            if (((ReplyPacket)commandOrReplyPacket).getErrorCode() != JdwpError.NONE.getCode()) {
+                throw new JDebugRuntimeException("ReplyPacket.getErrorCode() != NONE");
+            }
             this.commandOrReplyPacket = commandOrReplyPacket;
             data = ((ReplyPacket)commandOrReplyPacket).getData();
         } else {
