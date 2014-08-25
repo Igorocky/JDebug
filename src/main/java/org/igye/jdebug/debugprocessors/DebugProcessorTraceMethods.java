@@ -3,6 +3,7 @@ package org.igye.jdebug.debugprocessors;
 import org.igye.jdebug.DebugProcessor;
 import org.igye.jdebug.MessageReader;
 import org.igye.jdebug.MessageWriter;
+import org.igye.jdebug.datatypes.impl.MethodId;
 import org.igye.jdebug.datatypes.impl.ObjectId;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.EventModifier;
@@ -31,6 +32,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
     private Map<ObjectId, String> threadNames = new HashMap<>();
     private Map<ObjectId, String> classNames = new HashMap<>();
+    private Map<String, String> methodsNames = new HashMap<>();
 
     @Override
     public void run() {
@@ -62,7 +64,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         System.out.println("event.getThread() = " + event.getThread());
                         System.out.println("tread name = " + getThreadName(event.getThread()));
                         System.out.println("event.getLocation() = " + event.getLocation());
-                        System.out.println("class = " + getClassName(event.getLocation().getClassID()));
+                        System.out.println("class = " + getClassSignature(event.getLocation().getClassID()));
+                        System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
                         resumeThread(event.getThread());
                     }
                 }
@@ -157,7 +160,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         return res;
     }
 
-    private String getClassName(ObjectId classId) throws InterruptedException {
+    private String getClassSignature(ObjectId classId) throws InterruptedException {
         String res = classNames.get(classId);
         if (res == null) {
             res= new SignatureReply(
@@ -168,6 +171,27 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     )
             ).getSignature();
             classNames.put(classId, res);
+        }
+        return res;
+    }
+
+    private String getMethodNameAndSignature(ObjectId classId, MethodId methodId) throws InterruptedException {
+        String key = classId.toString() + methodId.toString();
+        String res = methodsNames.get(key);
+        if (res == null) {
+            MethodsReply mr = new MethodsReply(
+                    getReplyById(msgWriter.putMessage(new MethodsCommand(classId)))
+            );
+            for (MethodInfo methodInfo : mr.getMethods()) {
+                methodsNames.put(
+                        classId.toString() + methodInfo.getMethodId().toString(),
+                        methodInfo.getName() + methodInfo.getSignature()
+                );
+            }
+            res = methodsNames.get(key);
+        }
+        if (res == null) {
+            throw new JDebugRuntimeException("Can't determine method signature.");
         }
         return res;
     }

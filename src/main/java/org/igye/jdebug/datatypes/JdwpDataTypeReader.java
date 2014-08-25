@@ -13,6 +13,7 @@ import org.igye.jdebug.messages.core.IdSizes;
 import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.impl.ClassInfo;
 import org.igye.jdebug.messages.impl.Event;
+import org.igye.jdebug.messages.impl.MethodInfo;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -286,6 +287,15 @@ public class JdwpDataTypeReader {
         return new ClassInfo(
                 readByte(in, offset),
                 readObjectId(in, offset),
+                readString(in, offset),
+                readInt(in, offset)
+        );
+    }
+
+    public static MethodInfo readMethodInfo(byte[] in, ArrayOffset offset) {
+        return new MethodInfo(
+                readMethodId(in, offset),
+                readString(in, offset),
                 readString(in, offset),
                 readInt(in, offset)
         );

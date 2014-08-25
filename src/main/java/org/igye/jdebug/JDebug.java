@@ -81,6 +81,7 @@ public class JDebug {
             msgWriterThread.interrupt();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            System.out.println("Error: " + e.getMessage());
         } finally {
             if (msgReaderThread != null && !msgReaderThread.isInterrupted()) {
                 msgReaderThread.interrupt();

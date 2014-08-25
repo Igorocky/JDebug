@@ -9,6 +9,7 @@ public enum Command {
 
     //REFERENCE_TYPE(2),
     SIGNATURE(1),
+    METHODS(5),
 
     //CLASS_TYPE(3),
 
