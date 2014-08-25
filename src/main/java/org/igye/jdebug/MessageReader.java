@@ -1,6 +1,8 @@
 package org.igye.jdebug;
 
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
+import org.igye.jdebug.exceptions.EndOfStreamException;
+import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +32,13 @@ public class MessageReader implements Runnable {
                     msg = JdwpDataTypeReader.readMessage(in);
                     log.debug("Message read: {}", msg);
                 }
-            } catch (IOException e) {
-                log.error("Error while JdwpDataTypeReader.readMessage(in).", e);
-                return;
+            } catch (Exception e) {
+                throw new JDebugRuntimeException("Error while JdwpDataTypeReader.readMessage(in).", e);
             }
             try {
                 inMessages.put(msg);
             } catch (InterruptedException e) {
-                log.info("Interrupted while inMessages.put(msg).", e);
+                log.info("Interrupted while inMessages.put(msg).");
                 return;
             }
         }

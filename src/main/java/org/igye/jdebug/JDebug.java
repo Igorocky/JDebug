@@ -44,6 +44,8 @@ public class JDebug {
 
 
         Socket socket = null;
+        Thread msgReaderThread = null;
+        Thread msgWriterThread = null;
         try {
             socket = new Socket(args[0], Integer.parseInt(args[1]));
             InputStream in = socket.getInputStream();
@@ -63,11 +65,11 @@ public class JDebug {
             System.out.println("Connected.");
 
             MessageReader messageReader = new MessageReader(in);
-            Thread msgReaderThread = new Thread(messageReader);
+            msgReaderThread = new Thread(messageReader);
             msgReaderThread.start();
 
             MessageWriter messageWriter = new MessageWriter(out);
-            Thread msgWriterThread = new Thread(messageWriter);
+            msgWriterThread = new Thread(messageWriter);
             msgWriterThread.start();
 
             DebugProcessor proc = new DebugProcessorTraceMethods();
@@ -76,32 +78,17 @@ public class JDebug {
 
             msgReaderThread.interrupt();
             msgWriterThread.interrupt();
-
-            /*VersionCommand versionCommand = new VersionCommand();
-            long id = versionCommand.getId();
-            messageWriter.putMessage(versionCommand);
-            shortPause();
-            JdwpMessage msg = messageReader.takeMessage();
-            while (true) {
-                if (msg instanceof ReplyPacket) {
-                    System.out.println("msg.getId() = " + msg.getId());
-                    if (msg.getId() == id) {
-                        VersionReply versionReply = new VersionReply((ReplyPacket) msg);
-                        System.out.println("versionReply.getDescription() = " + versionReply.getDescription());
-                        System.out.println("versionReply.getJdwpMajor() = " + versionReply.getJdwpMajor());
-                        System.out.println("versionReply.getJdwpMinor() = " + versionReply.getJdwpMinor());
-                        System.out.println("versionReply.getVmVersion() = " + versionReply.getVmVersion());
-                        System.out.println("versionReply.getVmName() = " + versionReply.getVmName());
-                        break;
-                    }
-                }
-                msg = messageReader.takeMessage();
-            }*/
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         } catch (JDebugException e) {
             log.error(e.getMessage(), e);
         } finally {
+            if (msgReaderThread != null && !msgReaderThread.isInterrupted()) {
+                msgReaderThread.interrupt();
+            }
+            if (msgWriterThread != null && !msgWriterThread.isInterrupted()) {
+                msgWriterThread.interrupt();
+            }
             if (socket != null) {
                 try {
                     socket.close();

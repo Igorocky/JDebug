@@ -75,14 +75,22 @@ public class ByteArrays {
     }
 
     public static byte[] toByteArray(RepresentableAsArrayOfBytes... elems) {
-        ArrayList<byte[]> arrays = new ArrayList<>();
         if (elems != null) {
+            int notNullCnt = 0;
             for (RepresentableAsArrayOfBytes elem : elems) {
                 if (elem != null) {
-                    arrays.add(elem.toByteArray());
+                    notNullCnt++;
                 }
             }
-            return concat((byte[][]) arrays.toArray());
+            byte[][] arrays = new byte[notNullCnt][];
+            int idx = 0;
+            for (RepresentableAsArrayOfBytes elem : elems) {
+                if (elem != null) {
+                    arrays[idx] = elem.toByteArray();
+                    idx++;
+                }
+            }
+            return concat(arrays);
         } else {
             return null;
         }

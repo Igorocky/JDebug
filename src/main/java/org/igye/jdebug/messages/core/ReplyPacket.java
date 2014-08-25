@@ -55,7 +55,7 @@ public class ReplyPacket extends JdwpMessage implements HasId {
                 .append("Reply{id: ").append(id)
                 .append("; flags: ").append(flags)
                 .append("; errorCode: ").append(errorCode)
-                .append("; data: ").append(Hex.encodeHexString(data)).append("}")
+                .append("; data: ").append(data != null ? Hex.encodeHexString(data) : "null").append("}")
                 .toString();
     }
 }

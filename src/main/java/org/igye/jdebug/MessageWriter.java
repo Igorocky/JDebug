@@ -1,6 +1,7 @@
 package org.igye.jdebug;
 
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
+import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,15 +31,14 @@ public class MessageWriter implements Runnable {
                 synchronized (out) {
                     JdwpMessage msg = outMessages.poll(1, TimeUnit.SECONDS);
                     if (msg != null) {
+                        log.debug("About to write msg: {}", msg);
                         out.write(msg.toByteArray());
                     }
                 }
             } catch (InterruptedException e) {
-                log.info("Interrupted while outMessages.poll().", e);
-                return;
+                log.info("Interrupted while outMessages.poll().");
             } catch (IOException e) {
-                log.error("Exception while writing message.", e);
-                return;
+                throw new JDebugRuntimeException("Exception while writing message.", e);
             }
         }
     }

@@ -1,9 +1,11 @@
 package org.igye.jdebug.messages;
 
 import org.igye.jdebug.ArrayOffset;
+import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.ReplyPacket;
+import org.igye.jdebug.messages.impl.Event;
 
 public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes {
     public static final int COMMAND_FLAG = 0;
@@ -45,9 +47,9 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
     }
 
     protected String readString() {
-        if (data == null) {
+        /*if (data == null) {
             return null;
-        }
+        }*/
         if (offset == null) {
             offset = new ArrayOffset();
         }
@@ -55,12 +57,37 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
     }
 
     protected int readInt() {
-        if (data == null) {
+        /*if (data == null) {
             return 0;
-        }
+        }*/
         if (offset == null) {
             offset = new ArrayOffset();
         }
         return JdwpDataTypeReader.readInt(data, offset);
+    }
+
+    protected byte readByte() {
+        /*if (data == null) {
+            return 0;
+        }*/
+        if (offset == null) {
+            offset = new ArrayOffset();
+        }
+        return JdwpDataTypeReader.readByte(data, offset);
+    }
+
+    protected Event readEvent() {
+        /*if (data == null) {
+            return 0;
+        }*/
+        if (offset == null) {
+            offset = new ArrayOffset();
+        }
+        return JdwpDataTypeReader.readEvent(data, offset);
+    }
+
+    @Override
+    public String toString() {
+        return getCommandOrReplyPacket().toString();
     }
 }

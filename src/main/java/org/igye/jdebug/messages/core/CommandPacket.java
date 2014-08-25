@@ -60,11 +60,11 @@ public class CommandPacket extends JdwpMessage implements HasId {
     @Override
     public String toString() {
         return new StringBuilder()
-                .append("Reply{id: ").append(id)
+                .append("Command{id: ").append(id)
                 .append("; flags: ").append(flags)
                 .append("; commandSet: ").append(commandSet)
                 .append("; command: ").append(command)
-                .append("; data: ").append(Hex.encodeHexString(data)).append("}")
+                .append("; data: ").append(data != null ? Hex.encodeHexString(data) : "null").append("}")
                 .toString();
     }
 }

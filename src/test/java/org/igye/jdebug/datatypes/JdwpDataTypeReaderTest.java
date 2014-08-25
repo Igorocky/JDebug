@@ -3,7 +3,7 @@ package org.igye.jdebug.datatypes;
 import org.igye.jdebug.ArrayOffset;
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.impl.ObjectId;
-import org.igye.jdebug.datatypes.impl.Value;
+import org.igye.jdebug.exceptions.EndOfStreamException;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.igye.jdebug.messages.constants.Tag;
 import org.igye.jdebug.messages.core.CommandPacket;
@@ -29,7 +29,7 @@ public class JdwpDataTypeReaderTest {
     }
 
     @Test
-    public void readMessageCommand() throws IOException {
+    public void readMessageCommand() throws IOException, EndOfStreamException {
         ByteArrayInputStream in = new ByteArrayInputStream(
                 new byte[] {
                         0,0,0,16,
@@ -51,7 +51,7 @@ public class JdwpDataTypeReaderTest {
     }
 
     @Test
-    public void readMessageReply() throws IOException {
+    public void readMessageReply() throws IOException, EndOfStreamException {
         ByteArrayInputStream in = new ByteArrayInputStream(
                 new byte[] {
                         0,0,0,16,

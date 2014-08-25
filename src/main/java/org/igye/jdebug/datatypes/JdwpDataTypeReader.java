@@ -3,6 +3,7 @@ package org.igye.jdebug.datatypes;
 import org.igye.jdebug.ArrayOffset;
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.impl.*;
+import org.igye.jdebug.exceptions.EndOfStreamException;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.igye.jdebug.messages.constants.EventKind;
@@ -18,15 +19,21 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class JdwpDataTypeReader {
-    public static JdwpMessage readMessage(InputStream in) throws IOException {
+    public static JdwpMessage readMessage(InputStream in) throws IOException, EndOfStreamException {
         byte[] lengthArr = new byte[4];
         int bytesRead = in.read(lengthArr);
+        if (bytesRead == -1) {
+            throw new EndOfStreamException("End of stream in JdwpDataTypeReader.readMessage() [1]");
+        }
         if (bytesRead != lengthArr.length) {
             throw new IOException("bytesRead != lengthArr.length");
         }
         int length = (int) ByteArrays.fourByteArrayToLong(lengthArr);
         byte[] bytes = new byte[length - lengthArr.length];
         bytesRead = in.read(bytes);
+        if (bytesRead == -1) {
+            throw new EndOfStreamException("End of stream in JdwpDataTypeReader.readMessage() [2]");
+        }
         if (bytesRead != bytes.length) {
             throw new IOException("bytesRead != bytes.length");
         }
@@ -79,6 +86,10 @@ public class JdwpDataTypeReader {
         long res = readLong(in, offset.getOffset());
         offset.increase(8);
         return res;
+    }
+
+    public static byte readByte(byte[] in, ArrayOffset offset) {
+        return (byte) ByteArrays.byteArrayToLong(in, offset, 1);
     }
 
     public static ObjectId readObjectId(byte[] in, ArrayOffset offset) {

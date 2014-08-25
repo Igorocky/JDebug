@@ -141,4 +141,55 @@ public class Event {
         return event;
     }
 
+    public byte getEventKind() {
+        return eventKind;
+    }
+
+    public int getRequestId() {
+        return requestId;
+    }
+
+    public ObjectId getThread() {
+        return thread;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public TaggedObjectId getException() {
+        return exception;
+    }
+
+    public Location getCatchLocation() {
+        return catchLocation;
+    }
+
+    public byte getRefTypeTag() {
+        return refTypeTag;
+    }
+
+    public ObjectId getTypeId() {
+        return typeId;
+    }
+
+    public String getSignature() {
+        return signature;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public FieldId getFieldId() {
+        return fieldId;
+    }
+
+    public TaggedObjectId getObject() {
+        return object;
+    }
+
+    public Value getValueToBe() {
+        return valueToBe;
+    }
 }
