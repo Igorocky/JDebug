@@ -3,6 +3,7 @@ package org.igye.jdebug.messages.constants;
 public enum Command {
     //VirtualMachine
     VERSION(1),
+    ALL_CLASSES(3),
     ID_SIZES(7),
     RESUME(9),
 

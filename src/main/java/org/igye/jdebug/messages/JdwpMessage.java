@@ -5,6 +5,7 @@ import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.ReplyPacket;
+import org.igye.jdebug.messages.impl.ClassInfo;
 import org.igye.jdebug.messages.impl.Event;
 
 public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes {
@@ -67,9 +68,6 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
     }
 
     protected byte readByte() {
-        /*if (data == null) {
-            return 0;
-        }*/
         if (offset == null) {
             offset = new ArrayOffset();
         }
@@ -77,13 +75,17 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
     }
 
     protected Event readEvent() {
-        /*if (data == null) {
-            return 0;
-        }*/
         if (offset == null) {
             offset = new ArrayOffset();
         }
         return JdwpDataTypeReader.readEvent(data, offset);
+    }
+
+    protected ClassInfo readClassInfo() {
+        if (offset == null) {
+            offset = new ArrayOffset();
+        }
+        return JdwpDataTypeReader.readClassInfo(data, offset);
     }
 
     @Override

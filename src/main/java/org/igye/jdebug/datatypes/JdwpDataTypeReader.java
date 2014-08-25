@@ -11,32 +11,38 @@ import org.igye.jdebug.messages.constants.Tag;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.IdSizes;
 import org.igye.jdebug.messages.core.ReplyPacket;
+import org.igye.jdebug.messages.impl.ClassInfo;
 import org.igye.jdebug.messages.impl.Event;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class JdwpDataTypeReader {
-    public static JdwpMessage readMessage(InputStream in) throws IOException, EndOfStreamException {
+    public static JdwpMessage readMessage(DataInputStream in) throws IOException {
         byte[] lengthArr = new byte[4];
-        int bytesRead = in.read(lengthArr);
-        if (bytesRead == -1) {
+        /*int bytesRead = */in.readFully(lengthArr);
+        /*if (bytesRead == -1) {
             throw new EndOfStreamException("End of stream in JdwpDataTypeReader.readMessage() [1]");
         }
         if (bytesRead != lengthArr.length) {
-            throw new IOException("bytesRead != lengthArr.length");
-        }
+            throw new IOException("bytesRead != lengthArr.length " +
+                    "(bytesRead = " + bytesRead + ", lengthArr.length = " + lengthArr.length
+                    + ")");
+        }*/
         int length = (int) ByteArrays.fourByteArrayToLong(lengthArr);
         byte[] bytes = new byte[length - lengthArr.length];
-        bytesRead = in.read(bytes);
-        if (bytesRead == -1) {
+        /*bytesRead = */in.readFully(bytes);
+        /*if (bytesRead == -1) {
             throw new EndOfStreamException("End of stream in JdwpDataTypeReader.readMessage() [2]");
         }
         if (bytesRead != bytes.length) {
-            throw new IOException("bytesRead != bytes.length");
-        }
+            throw new IOException("bytesRead != lengthArr.length " +
+                    "(bytesRead = " + bytesRead + ", lengthArr.length = " + lengthArr.length
+                    + ")");
+        }*/
         byte[] data = length == 11 ? null : new byte[length - 11];
         if (data != null) {
             System.arraycopy(bytes, 7, data, 0, data.length);
@@ -290,5 +296,14 @@ public class JdwpDataTypeReader {
                 break;
         }
         return res;
+    }
+
+    public static ClassInfo readClassInfo(byte[] in, ArrayOffset offset) {
+        return new ClassInfo(
+                readByte(in, offset),
+                readObjectId(in, offset),
+                readString(in, offset),
+                readInt(in, offset)
+        );
     }
 }

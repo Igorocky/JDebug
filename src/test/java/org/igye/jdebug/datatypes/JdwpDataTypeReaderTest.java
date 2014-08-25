@@ -13,6 +13,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -40,7 +41,7 @@ public class JdwpDataTypeReaderTest {
                         1,2,3,4,5
                 }
         );
-        JdwpMessage msg = JdwpDataTypeReader.readMessage(in);
+        JdwpMessage msg = JdwpDataTypeReader.readMessage(new DataInputStream(in));
         assertTrue(msg.getClass() == CommandPacket.class);
         CommandPacket commandPacket = (CommandPacket) msg;
         assertEquals(10, commandPacket.getId());
@@ -61,7 +62,7 @@ public class JdwpDataTypeReaderTest {
                         1,2,3,4,5
                 }
         );
-        JdwpMessage msg = JdwpDataTypeReader.readMessage(in);
+        JdwpMessage msg = JdwpDataTypeReader.readMessage(new DataInputStream(in));
         assertTrue(msg.getClass() == ReplyPacket.class);
         ReplyPacket replyPacket = (ReplyPacket) msg;
         assertEquals(10, replyPacket.getId());

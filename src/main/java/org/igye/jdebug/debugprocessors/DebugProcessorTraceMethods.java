@@ -4,6 +4,7 @@ import org.igye.jdebug.DebugProcessor;
 import org.igye.jdebug.MessageReader;
 import org.igye.jdebug.MessageWriter;
 import org.igye.jdebug.datatypes.impl.ObjectId;
+import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.EventModifier;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.igye.jdebug.messages.constants.Command;
@@ -29,6 +30,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private List<CommandPacket> commandsBuf = new ArrayList<>();
 
     private Map<ObjectId, String> threadNames = new HashMap<>();
+    private Map<ObjectId, ClassInfo> allClasses = new HashMap<>();
 
     @Override
     public void run() {
@@ -37,7 +39,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
             long id = msgWriter.putMessage(new SetCommand(
                     EventKind.METHOD_ENTRY,
-                    SuspendPolicy.EVENT_THREAD,
+                    SuspendPolicy.ALL,
                     new EventModifier[] {new ClassMatch("org.igye*")}
             ));
             SetReply setReply = new SetReply(getReplyById(id));
@@ -61,6 +63,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         System.out.println("event.getThread() = " + event.getThread());
                         System.out.println("tread name = " + getThreadName(event.getThread()));
                         System.out.println("event.getLocation() = " + event.getLocation());
+                        System.out.println("class = " + getClassName(event.getLocation().getClassID()));
                     }
                 }
                 if (needResume) {
@@ -146,6 +149,28 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             threadNames.put(threadId, res);
         }
         return res;
+    }
+
+    private String getClassName(ObjectId classId) throws InterruptedException {
+        ClassInfo res = allClasses.get(classId);
+        if (res == null) {
+            ClassInfo[] classes = new AllClassesReply(
+                    getReplyById(
+                            msgWriter.putMessage(
+                                    new AllClassesCommand()
+                            )
+                    )
+            ).getClasses();
+            allClasses.clear();
+            for (ClassInfo clazz : classes) {
+                allClasses.put(clazz.getTypeId(), clazz);
+            }
+            res = allClasses.get(classId);
+        }
+        if (res == null) {
+            throw new JDebugRuntimeException("res == null");
+        }
+        return res.getSignature();
     }
 
     @Override

@@ -8,6 +8,7 @@ import org.igye.jdebug.messages.JdwpMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.BlockingQueue;
@@ -19,11 +20,11 @@ public class MessageReader implements Runnable {
 
     private volatile boolean isAlive;
 
-    private InputStream in;
+    private DataInputStream in;
     private BlockingQueue<JdwpMessage> inMessages;
 
     public MessageReader(InputStream in) {
-        this.in = in;
+        this.in = new DataInputStream(in);
         this.inMessages = new LinkedBlockingQueue<>();
     }
 
