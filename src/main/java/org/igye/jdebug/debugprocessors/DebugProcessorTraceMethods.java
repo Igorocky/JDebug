@@ -39,7 +39,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
             long id = msgWriter.putMessage(new SetCommand(
                     EventKind.METHOD_ENTRY,
-                    SuspendPolicy.ALL,
+                    SuspendPolicy.EVENT_THREAD,
                     new EventModifier[] {new ClassMatch("org.igye*")}
             ));
             SetReply setReply = new SetReply(getReplyById(id));
@@ -59,16 +59,12 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     System.out.println("event.getEventKind() = " + ek);
                     System.out.println("event.getRequestId() = " + event.getRequestId());
                     if (ek == EventKind.METHOD_ENTRY) {
-                        needResume = true;
                         System.out.println("event.getThread() = " + event.getThread());
                         System.out.println("tread name = " + getThreadName(event.getThread()));
                         System.out.println("event.getLocation() = " + event.getLocation());
                         System.out.println("class = " + getClassName(event.getLocation().getClassID()));
+                        resumeThread(event.getThread());
                     }
-                }
-                if (needResume) {
-                    msgWriter.putMessage(new ResumeCommand());
-                    needResume = false;
                 }
             }
 
@@ -78,6 +74,16 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         } catch (Exception e) {
             log.error("Exception in run().", e);
         }
+    }
+
+    private void resumeThread(ObjectId threadId) throws InterruptedException {
+        new ResumeThreadReply(
+                getReplyById(
+                        msgWriter.putMessage(
+                                new ResumeThreadCommand(threadId)
+                        )
+                )
+        );
     }
 
     private void initIdSizes() throws InterruptedException {
