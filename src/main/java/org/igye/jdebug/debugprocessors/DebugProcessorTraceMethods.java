@@ -44,23 +44,23 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             EventModifier[] methodEnterExitModifiers = new EventModifier[] {
                     new ClassMatch("org.igye*")
             };
-            SetReply setReply = new SetReply(getReplyById(
+            SuspendPolicy methodEnterExitSuspendPolicy = SuspendPolicy.EVENT_THREAD;
+            int methodEntryRequestId = new SetReply(getReplyById(
                     msgWriter.putMessage(new SetCommand(
                             EventKind.METHOD_ENTRY,
-                            SuspendPolicy.EVENT_THREAD,
+                            methodEnterExitSuspendPolicy,
                             methodEnterExitModifiers
                     ))
-            ));
-            System.out.println("METHOD_ENTRY_setReply.getRequestId() = " + setReply.getRequestId());
-            setReply = new SetReply(getReplyById(
+            )).getRequestId();
+            System.out.println("methodEntryRequestId = " + methodEntryRequestId);
+            int methodExitRequestId = new SetReply(getReplyById(
                     msgWriter.putMessage(new SetCommand(
                             EventKind.METHOD_EXIT,
-                            SuspendPolicy.EVENT_THREAD,
+                            methodEnterExitSuspendPolicy,
                             methodEnterExitModifiers
                     ))
-            ));
-            System.out.println("METHOD_EXIT_setReply.getRequestId() = " + setReply.getRequestId());
-            clearAllBreakpoints();
+            )).getRequestId();
+            System.out.println("methodExitRequestId = " + methodExitRequestId);
 
             msgWriter.putMessage(new ResumeCommand());
 
@@ -74,8 +74,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     EventKind ek = EventKind.getEventKindByCode(event.getEventKind());
                     System.out.println("event.getEventKind() = " + ek);
                     System.out.println("event.getRequestId() = " + event.getRequestId());
-                    if (ek == EventKind.METHOD_ENTRY
-                            || ek == EventKind.METHOD_EXIT) {
+                    if (event.getRequestId() == methodEntryRequestId
+                            || event.getRequestId() == methodExitRequestId) {
                         System.out.println("event.getThread() = " + event.getThread());
                         System.out.println("tread name = " + getThreadName(event.getThread()));
                         System.out.println("event.getLocation() = " + event.getLocation());
@@ -83,13 +83,6 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
                         long codeIndex = ByteArrays.byteArrayToLong(event.getLocation().getIndex(), 0, 8);
                         System.out.println("line = " + getLineNumber(event.getLocation().getClassID(), event.getLocation().getMethodID(), codeIndex));
-                        resumeThread(event.getThread());
-                    } else if (ek == EventKind.BREAKPOINT) {
-                        System.out.println("event.getThread() = " + event.getThread());
-                        System.out.println("tread name = " + getThreadName(event.getThread()));
-                        System.out.println("event.getLocation() = " + event.getLocation());
-                        System.out.println("class = " + getClassSignature(event.getLocation().getClassID()));
-                        System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
                         resumeThread(event.getThread());
                     }
                 }
@@ -244,14 +237,10 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                             ))
                     )
             );
-            System.out.println("ltr.getStart() = " + ltr.getStart());
-            System.out.println("ltr.getEnd() = " + ltr.getEnd());
             for (LineTableEntry entry : ltr.getLineTable()) {
                 String kk = leftPartOfKey + "_" + entry.getLineCodeIndex();
-                System.out.println("kk = " + kk);
-                System.out.println("entry.getLineNumber() = " + entry.getLineNumber());
                 lineNumbers.put(
-                        /*leftPartOfKey + "_" + entry.getLineCodeIndex()*/kk,
+                        leftPartOfKey + "_" + entry.getLineCodeIndex(),
                         entry.getLineNumber()
                 );
             }
