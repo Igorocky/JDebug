@@ -3,6 +3,7 @@ package org.igye.jdebug.debugprocessors;
 import org.igye.jdebug.DebugProcessor;
 import org.igye.jdebug.MessageReader;
 import org.igye.jdebug.MessageWriter;
+import org.igye.jdebug.datatypes.impl.ObjectId;
 import org.igye.jdebug.messages.EventModifier;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.igye.jdebug.messages.constants.Command;
@@ -17,10 +18,7 @@ import org.igye.jdebug.messages.impl.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 public class DebugProcessorTraceMethods implements DebugProcessor {
     private static Logger log = LoggerFactory.getLogger(DebugProcessorTraceMethods.class);
@@ -30,6 +28,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
     private List<CommandPacket> commandsBuf = new ArrayList<>();
 
+    private Map<ObjectId, String> threadNames = new HashMap<>();
+
     @Override
     public void run() {
         try {
@@ -37,7 +37,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
             long id = msgWriter.putMessage(new SetCommand(
                     EventKind.METHOD_ENTRY,
-                    SuspendPolicy.ALL,
+                    SuspendPolicy.EVENT_THREAD,
                     new EventModifier[] {new ClassMatch("org.igye*")}
             ));
             SetReply setReply = new SetReply(getReplyById(id));
@@ -55,8 +55,12 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                 for (Event event : cmd.getEvents()) {
                     EventKind ek = EventKind.getEventKindByCode(event.getEventKind());
                     System.out.println("event.getEventKind() = " + ek);
+                    System.out.println("event.getRequestId() = " + event.getRequestId());
                     if (ek == EventKind.METHOD_ENTRY) {
                         needResume = true;
+                        System.out.println("event.getThread() = " + event.getThread());
+                        System.out.println("tread name = " + getThreadName(event.getThread()));
+                        System.out.println("event.getLocation() = " + event.getLocation());
                     }
                 }
                 if (needResume) {
@@ -127,6 +131,21 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     "commandPacket is not a composite command. " +
                     commandPacket);
         }
+    }
+
+    private String getThreadName(ObjectId threadId) throws InterruptedException {
+        String res = threadNames.get(threadId);
+        if (res == null) {
+            res= new ThreadNameReply(
+                    getReplyById(
+                            msgWriter.putMessage(
+                                    new ThreadNameCommand(threadId)
+                            )
+                    )
+            ).getName();
+            threadNames.put(threadId, res);
+        }
+        return res;
     }
 
     @Override

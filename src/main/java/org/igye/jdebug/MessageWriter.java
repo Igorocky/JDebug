@@ -26,20 +26,25 @@ public class MessageWriter implements Runnable {
 
     @Override
     public void run() {
-        while (!Thread.interrupted()) {
-            try {
-                synchronized (out) {
-                    JdwpMessage msg = outMessages.poll(1, TimeUnit.SECONDS);
-                    if (msg != null) {
-                        log.debug("About to write msg: {}", msg);
-                        out.write(msg.toByteArray());
+        try {
+            while (!Thread.interrupted()) {
+                try {
+                    synchronized (out) {
+                        JdwpMessage msg = outMessages.poll(1, TimeUnit.SECONDS);
+                        if (msg != null) {
+                            log.debug("About to write msg: {}", msg);
+                            out.write(msg.toByteArray());
+                        }
                     }
+                } catch (InterruptedException e) {
+                    log.info("Interrupted while outMessages.poll().");
+                    Thread.currentThread().interrupt();
+                } catch (IOException e) {
+                    throw new JDebugRuntimeException("Exception while writing message.", e);
                 }
-            } catch (InterruptedException e) {
-                log.info("Interrupted while outMessages.poll().");
-            } catch (IOException e) {
-                throw new JDebugRuntimeException("Exception while writing message.", e);
             }
+        } catch (Exception e) {
+            log.error("Exception:", e);
         }
     }
 

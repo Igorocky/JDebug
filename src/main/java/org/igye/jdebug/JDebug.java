@@ -2,6 +2,7 @@ package org.igye.jdebug;
 
 import org.igye.jdebug.debugprocessors.DebugProcessorTraceMethods;
 import org.igye.jdebug.exceptions.JDebugException;
+import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.JdwpMessage;
 import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.impl.VersionCommand;
@@ -65,11 +66,11 @@ public class JDebug {
             System.out.println("Connected.");
 
             MessageReader messageReader = new MessageReader(in);
-            msgReaderThread = new Thread(messageReader);
+            msgReaderThread = new Thread(messageReader, "MessageReader");
             msgReaderThread.start();
 
             MessageWriter messageWriter = new MessageWriter(out);
-            msgWriterThread = new Thread(messageWriter);
+            msgWriterThread = new Thread(messageWriter, "MessageWriter");
             msgWriterThread.start();
 
             DebugProcessor proc = new DebugProcessorTraceMethods();
@@ -78,9 +79,7 @@ public class JDebug {
 
             msgReaderThread.interrupt();
             msgWriterThread.interrupt();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        } catch (JDebugException e) {
+        } catch (Exception e) {
             log.error(e.getMessage(), e);
         } finally {
             if (msgReaderThread != null && !msgReaderThread.isInterrupted()) {

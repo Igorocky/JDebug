@@ -1,5 +1,6 @@
 package org.igye.jdebug.datatypes.impl;
 
+import org.apache.commons.codec.binary.Hex;
 import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.datatypes.JdwpDataType;
 
@@ -23,5 +24,10 @@ public final class JdwpString implements JdwpDataType {
                 ByteArrays.intToBigEndianByteArray(value.length()),
                 value.getBytes()
         );
+    }
+
+    @Override
+    public String toString() {
+        return value;
     }
 }

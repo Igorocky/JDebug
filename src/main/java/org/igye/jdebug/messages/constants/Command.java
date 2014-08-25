@@ -11,6 +11,9 @@ public enum Command {
 
     //Event Command Set
     COMPOSITE_COMMAND(100),
+
+    //ThreadReference
+    THREAD_NAME(1),
     ;
     private int code;
 
