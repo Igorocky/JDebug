@@ -80,6 +80,13 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
         return JdwpDataTypeReader.readByte(data, offset);
     }
 
+    protected long readLong() {
+        if (offset == null) {
+            offset = new ArrayOffset();
+        }
+        return JdwpDataTypeReader.readLong(data, offset);
+    }
+
     protected Event readEvent() {
         if (offset == null) {
             offset = new ArrayOffset();

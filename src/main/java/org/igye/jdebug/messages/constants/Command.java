@@ -18,6 +18,7 @@ public enum Command {
     //INTERFACE_TYPE(5),
 
     //METHOD(6),
+    LINE_TABLE(1),
 
     //FIELD(8),
 

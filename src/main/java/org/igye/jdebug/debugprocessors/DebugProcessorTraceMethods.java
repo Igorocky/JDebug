@@ -1,5 +1,6 @@
 package org.igye.jdebug.debugprocessors;
 
+import org.igye.jdebug.ByteArrays;
 import org.igye.jdebug.DebugProcessor;
 import org.igye.jdebug.MessageReader;
 import org.igye.jdebug.MessageWriter;
@@ -33,6 +34,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private Map<ObjectId, String> threadNames = new HashMap<>();
     private Map<ObjectId, String> classNames = new HashMap<>();
     private Map<String, String> methodsNames = new HashMap<>();
+    private Map<String, Integer> lineNumbers = new HashMap<>();
 
     @Override
     public void run() {
@@ -66,6 +68,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         System.out.println("event.getLocation() = " + event.getLocation());
                         System.out.println("class = " + getClassSignature(event.getLocation().getClassID()));
                         System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
+                        long codeIndex = ByteArrays.byteArrayToLong(event.getLocation().getIndex(), 0, 8);
+                        System.out.println("line = " + getLineNumber(event.getLocation().getClassID(), event.getLocation().getMethodID(), codeIndex));
                         resumeThread(event.getThread());
                     }
                 }
@@ -192,6 +196,32 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         }
         if (res == null) {
             throw new JDebugRuntimeException("Can't determine method signature.");
+        }
+        return res;
+    }
+
+    private int getLineNumber(ObjectId classId, MethodId methodId, long lineCodeIndex) throws InterruptedException {
+        String leftPartOfKey = classId.toString() + methodId.toString();
+        String key = leftPartOfKey + "_" + lineCodeIndex;
+        Integer res = lineNumbers.get(key);
+        if (res == null) {
+            LineTableReply ltr = new LineTableReply(
+                    getReplyById(
+                            msgWriter.putMessage(new LineTableCommand(
+                                    classId, methodId
+                            ))
+                    )
+            );
+            for (LineTableEntry entry : ltr.getLineTable()) {
+                lineNumbers.put(
+                        leftPartOfKey + "_" + entry.getLineCodeIndex(),
+                        entry.getLineNumber()
+                );
+            }
+        }
+        res = lineNumbers.get(key);
+        if (res == null) {
+            throw new JDebugRuntimeException("Can't determine line number.");
         }
         return res;
     }
