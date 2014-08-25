@@ -38,6 +38,7 @@ public enum Command {
 
     //EVENT_REQUEST(15),
     SET(1),
+    CLEAR_ALL_BREAKPOINTS(3),
 
     //STACK_FRAME(16),
 

@@ -41,28 +41,41 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         try {
             initIdSizes();
 
-            long id = msgWriter.putMessage(new SetCommand(
-                    EventKind.METHOD_ENTRY,
-                    SuspendPolicy.EVENT_THREAD,
-                    new EventModifier[] {new ClassMatch("org.igye*")}
+            EventModifier[] methodEnterExitModifiers = new EventModifier[] {
+                    new ClassMatch("org.igye*")
+            };
+            SetReply setReply = new SetReply(getReplyById(
+                    msgWriter.putMessage(new SetCommand(
+                            EventKind.METHOD_ENTRY,
+                            SuspendPolicy.EVENT_THREAD,
+                            methodEnterExitModifiers
+                    ))
             ));
-            SetReply setReply = new SetReply(getReplyById(id));
-            int requestId = setReply.getRequestId();
-            System.out.println("setReply.getErrorCode() = " + setReply.getErrorCode());
-            System.out.println("setReply.getRequestId() = " + setReply.getRequestId());
+            System.out.println("METHOD_ENTRY_setReply.getRequestId() = " + setReply.getRequestId());
+            setReply = new SetReply(getReplyById(
+                    msgWriter.putMessage(new SetCommand(
+                            EventKind.METHOD_EXIT,
+                            SuspendPolicy.EVENT_THREAD,
+                            methodEnterExitModifiers
+                    ))
+            ));
+            System.out.println("METHOD_EXIT_setReply.getRequestId() = " + setReply.getRequestId());
+            clearAllBreakpoints();
 
             msgWriter.putMessage(new ResumeCommand());
 
             while (true) {
                 System.out.println("-------------------------------");
                 CompositeCommand cmd = convertToCompositeCommand(getCommand());
+                System.out.println("cmd.getSuspendPolicy() = " + cmd.getSuspendPolicy());
                 System.out.println("cmd.getEvents().length = " + cmd.getEvents().length);
                 boolean needResume = false;
                 for (Event event : cmd.getEvents()) {
                     EventKind ek = EventKind.getEventKindByCode(event.getEventKind());
                     System.out.println("event.getEventKind() = " + ek);
                     System.out.println("event.getRequestId() = " + event.getRequestId());
-                    if (ek == EventKind.METHOD_ENTRY) {
+                    if (ek == EventKind.METHOD_ENTRY
+                            || ek == EventKind.METHOD_EXIT) {
                         System.out.println("event.getThread() = " + event.getThread());
                         System.out.println("tread name = " + getThreadName(event.getThread()));
                         System.out.println("event.getLocation() = " + event.getLocation());
@@ -71,11 +84,20 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         long codeIndex = ByteArrays.byteArrayToLong(event.getLocation().getIndex(), 0, 8);
                         System.out.println("line = " + getLineNumber(event.getLocation().getClassID(), event.getLocation().getMethodID(), codeIndex));
                         resumeThread(event.getThread());
+                    } else if (ek == EventKind.BREAKPOINT) {
+                        System.out.println("event.getThread() = " + event.getThread());
+                        System.out.println("tread name = " + getThreadName(event.getThread()));
+                        System.out.println("event.getLocation() = " + event.getLocation());
+                        System.out.println("class = " + getClassSignature(event.getLocation().getClassID()));
+                        System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
+                        resumeThread(event.getThread());
                     }
                 }
             }
 
 
+        } catch (JDebugRuntimeException e) {
+            throw e;
         } catch (InterruptedException e) {
             log.error("InterruptedException in run().", e);
         } catch (Exception e) {
@@ -88,6 +110,16 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                 getReplyById(
                         msgWriter.putMessage(
                                 new ResumeThreadCommand(threadId)
+                        )
+                )
+        );
+    }
+
+    private void clearAllBreakpoints() throws InterruptedException {
+        new ClearAllBreakpointsReply(
+                getReplyById(
+                        msgWriter.putMessage(
+                                new ClearAllBreakpointsCommand()
                         )
                 )
         );
@@ -212,16 +244,25 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                             ))
                     )
             );
+            System.out.println("ltr.getStart() = " + ltr.getStart());
+            System.out.println("ltr.getEnd() = " + ltr.getEnd());
             for (LineTableEntry entry : ltr.getLineTable()) {
+                String kk = leftPartOfKey + "_" + entry.getLineCodeIndex();
+                System.out.println("kk = " + kk);
+                System.out.println("entry.getLineNumber() = " + entry.getLineNumber());
                 lineNumbers.put(
-                        leftPartOfKey + "_" + entry.getLineCodeIndex(),
+                        /*leftPartOfKey + "_" + entry.getLineCodeIndex()*/kk,
                         entry.getLineNumber()
                 );
             }
         }
         res = lineNumbers.get(key);
         if (res == null) {
-            throw new JDebugRuntimeException("Can't determine line number.");
+            /*throw new JDebugRuntimeException("Can't determine line number. " +
+                    " classId = " + classId +
+                    " methodId = " + methodId +
+                    " lineCodeIndex = " + lineCodeIndex);*/
+            return -1;
         }
         return res;
     }

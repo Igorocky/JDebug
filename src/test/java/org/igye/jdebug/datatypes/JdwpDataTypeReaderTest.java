@@ -30,7 +30,7 @@ public class JdwpDataTypeReaderTest {
     }
 
     @Test
-    public void readMessageCommand() throws IOException, EndOfStreamException {
+    public void readMessageCommand() throws IOException {
         ByteArrayInputStream in = new ByteArrayInputStream(
                 new byte[] {
                         0,0,0,16,
@@ -52,7 +52,7 @@ public class JdwpDataTypeReaderTest {
     }
 
     @Test
-    public void readMessageReply() throws IOException, EndOfStreamException {
+    public void readMessageReply() throws IOException {
         ByteArrayInputStream in = new ByteArrayInputStream(
                 new byte[] {
                         0,0,0,16,
