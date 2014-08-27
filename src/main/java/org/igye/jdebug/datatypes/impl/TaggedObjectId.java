@@ -9,6 +9,9 @@ import java.util.Arrays;
 public class TaggedObjectId implements JdwpDataType {
     private byte[] id;
     private byte tag;
+    private String toStringResult;
+    private boolean hasHashCodeResult = false;
+    private int hashCodeResult;
 
     public TaggedObjectId(byte[] id, byte tag) {
         if (id.length != IdSizes.getObjectIDSize()) {
@@ -33,7 +36,10 @@ public class TaggedObjectId implements JdwpDataType {
 
     @Override
     public String toString() {
-        return Hex.encodeHexString(id);
+        if (toStringResult == null) {
+            toStringResult = tag + "_" + Hex.encodeHexString(id);
+        }
+        return toStringResult;
     }
 
     @Override
@@ -58,6 +64,10 @@ public class TaggedObjectId implements JdwpDataType {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(id);
+        if (!hasHashCodeResult) {
+            hashCodeResult = Arrays.hashCode(id);
+            hasHashCodeResult = true;
+        }
+        return hashCodeResult;
     }
 }

@@ -8,6 +8,9 @@ import java.util.Arrays;
 
 public class FieldId implements JdwpDataType {
     private byte[] id;
+    private String toStringResult;
+    private boolean hasHashCodeResult = false;
+    private int hashCodeResult;
 
     public FieldId(byte[] id) {
         if (id.length != IdSizes.getFieldIDSize()) {
@@ -27,7 +30,10 @@ public class FieldId implements JdwpDataType {
 
     @Override
     public String toString() {
-        return Hex.encodeHexString(id);
+        if (toStringResult == null) {
+            toStringResult = Hex.encodeHexString(id);
+        }
+        return toStringResult;
     }
 
     @Override
@@ -52,6 +58,10 @@ public class FieldId implements JdwpDataType {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(id);
+        if (!hasHashCodeResult) {
+            hashCodeResult = Arrays.hashCode(id);
+            hasHashCodeResult = true;
+        }
+        return hashCodeResult;
     }
 }

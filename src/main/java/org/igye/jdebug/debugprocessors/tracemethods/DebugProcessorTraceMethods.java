@@ -1,6 +1,7 @@
 package org.igye.jdebug.debugprocessors.tracemethods;
 
 import org.igye.jdebug.*;
+import org.igye.jdebug.datatypes.impl.Location;
 import org.igye.jdebug.datatypes.impl.MethodId;
 import org.igye.jdebug.datatypes.impl.ObjectId;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
@@ -13,11 +14,16 @@ import org.igye.jdebug.messages.constants.SuspendPolicy;
 import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.IdSizes;
 import org.igye.jdebug.messages.core.ReplyPacket;
+import org.igye.jdebug.messages.eventmodifiers.ClassExclude;
 import org.igye.jdebug.messages.eventmodifiers.ClassMatch;
 import org.igye.jdebug.messages.impl.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class DebugProcessorTraceMethods implements DebugProcessor {
@@ -36,31 +42,26 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private Map<String, String> methodsNames = new HashMap<>();
     private Map<String, Integer> lineNumbers = new HashMap<>();
 
+    private PrintStream rawOutputFile;
+    private String rawOutputFileName = "raw.txt";
+    private PrintStream threadNamesFile;
+    private String threadNamesFileName = "thread_names.txt";
+    private PrintStream classNamesFile;
+    private String classNamesFileName = "class_names.txt";
+    private PrintStream methodNamesFile;
+    private String methodNamesFileName = "method_names.txt";
+
     @Override
     public void run() {
         try {
             initIdSizes();
+            openFiles();
 
-            EventModifier[] methodEnterExitModifiers = new EventModifier[] {
-                    new ClassMatch("org.igye*")
-            };
+//            EventModifier[] methodEnterExitModifiers = new EventModifier[] {
+//                    new ClassMatch("org.igye*")
+//            };
+            EventModifier[] methodEnterExitModifiers = createModifiers();
             SuspendPolicy allEventsSuspendPolicy = SuspendPolicy.EVENT_THREAD;
-            int methodEntryRequestId = new SetReply(getReplyById(
-                    msgWriter.putMessage(new SetCommand(
-                            EventKind.METHOD_ENTRY,
-                            allEventsSuspendPolicy,
-                            methodEnterExitModifiers
-                    ))
-            )).getRequestId();
-            System.out.println("methodEntryRequestId = " + methodEntryRequestId);
-//            int methodExitRequestId = new SetReply(getReplyById(
-//                    msgWriter.putMessage(new SetCommand(
-//                            EventKind.METHOD_EXIT,
-//                            allEventsSuspendPolicy,
-//                            methodEnterExitModifiers
-//                    ))
-//            )).getRequestId();
-//            System.out.println("methodExitRequestId = " + methodExitRequestId);
             int threadStartRequestId = new SetReply(getReplyById(
                     msgWriter.putMessage(new SetCommand(
                             EventKind.THREAD_START,
@@ -68,7 +69,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                             null
                     ))
             )).getRequestId();
-            System.out.println("threadStartRequestId = " + threadStartRequestId);
+            log.debug("threadStartRequestId = {}", threadStartRequestId);
             int threadDeathRequestId = new SetReply(getReplyById(
                     msgWriter.putMessage(new SetCommand(
                             EventKind.THREAD_DEATH,
@@ -76,37 +77,86 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                             null
                     ))
             )).getRequestId();
-            System.out.println("threadDeathRequestId = " + threadDeathRequestId);
+            log.debug("threadDeathRequestId = {}", threadDeathRequestId);
+            int methodEntryRequestId = new SetReply(getReplyById(
+                    msgWriter.putMessage(new SetCommand(
+                            EventKind.METHOD_ENTRY,
+                            allEventsSuspendPolicy,
+                            methodEnterExitModifiers
+                    ))
+            )).getRequestId();
+            log.debug("methodEntryRequestId = {}", methodEntryRequestId);
+            int methodExitRequestId = new SetReply(getReplyById(
+                    msgWriter.putMessage(new SetCommand(
+                            EventKind.METHOD_EXIT,
+                            allEventsSuspendPolicy,
+                            methodEnterExitModifiers
+                    ))
+            )).getRequestId();
+            log.debug("methodExitRequestId = {}", methodExitRequestId);
 
             msgWriter.putMessage(new ResumeCommand());
 
             while (true) {
-                System.out.println("-------------------------------");
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+                Date date = new Date();
+                log.debug("-------------------------------");
                 CompositeCommand cmd = convertToCompositeCommand(getCommand());
-                System.out.println("cmd.getSuspendPolicy() = " + cmd.getSuspendPolicy());
-                System.out.println("cmd.getEvents().length = " + cmd.getEvents().length);
-                boolean needResume = false;
+                if (log.isDebugEnabled()) {
+                    log.debug("cmd.getSuspendPolicy() = " + cmd.getSuspendPolicy());
+                    log.debug("cmd.getEvents().length = " + cmd.getEvents().length);
+                }
                 for (Event event : cmd.getEvents()) {
-                    EventKind ek = EventKind.getEventKindByCode(event.getEventKind());
-                    System.out.println("event.getEventKind() = " + ek);
-                    System.out.println("event.getRequestId() = " + event.getRequestId());
-                    if (event.getRequestId() == methodEntryRequestId
-                            /*|| event.getRequestId() == methodExitRequestId*/) {
-                        System.out.println("event.getThread() = " + event.getThread());
-                        System.out.println("tread name = " + getThreadName(event.getThread()));
-                        System.out.println("event.getLocation() = " + event.getLocation());
-                        System.out.println("class = " + getClassSignature(event.getLocation().getClassID()));
-                        System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
-                        long codeIndex = ByteArrays.byteArrayToLong(event.getLocation().getIndex(), 0, 8);
-                        System.out.println("line = " + getLineNumber(event.getLocation().getClassID(), event.getLocation().getMethodID(), codeIndex));
+                    if (log.isDebugEnabled()) {
+                        EventKind ek = EventKind.getEventKindByCode(event.getEventKind());
+                        log.debug("event.getEventKind() = " + ek);
+                        log.debug("event.getRequestId() = " + event.getRequestId());
+                    }
+                    long requestId = event.getRequestId();
+                    if (requestId == methodEntryRequestId || requestId == methodExitRequestId) {
                         resumeThread(event.getThread());
-                    } else if (event.getRequestId() == threadStartRequestId) {
-                        System.out.println("event.getThread() = " + event.getThread());
-                        System.out.println("tread name = " + getThreadName(event.getThread()));
-                        resumeThread(event.getThread());
-                    } else if (event.getRequestId() == threadDeathRequestId) {
-                        System.out.println("event.getThread() = " + event.getThread());
-                        System.out.println("tread name = " + getThreadName(event.getThread()));
+
+                        Location location = event.getLocation();
+                        getThreadName(event.getThread());
+                        getClassSignature(location.getClassID());
+                        getMethodNameAndSignature(location.getClassID(), location.getMethodID());
+                        long codeIndex = ByteArrays.byteArrayToLong(location.getIndex(), 0, 8);
+                        int lineNumber = getLineNumber(location.getClassID(), location.getMethodID(), codeIndex);
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("event.getThread() = " + event.getThread());
+                            log.debug("tread name = " + getThreadName(event.getThread()));
+                            log.debug("event.getLocation() = " + event.getLocation());
+                            log.debug("class = " + getClassSignature(location.getClassID()));
+                            log.debug("method = " + getMethodNameAndSignature(location.getClassID(), location.getMethodID()));
+                            log.debug("line = " + lineNumber);
+                        }
+
+                        date.setTime(System.currentTimeMillis());
+                        rawOutputFile.println(
+                                SequentialNumberGenerator.getInstance().next() + " " +
+                                        simpleDateFormat.format(date) + " " +
+                                        (requestId == methodEntryRequestId ? EventKind.METHOD_ENTRY.getCode() : EventKind.METHOD_EXIT.getCode()) + " " +
+                                        event.getThread() + " " +
+                                        location.getClassID() + " " +
+                                        location.getMethodID() + " " +
+                                        codeIndex + " " +
+                                        lineNumber
+                        );
+                    } else if (requestId == threadStartRequestId || requestId == threadDeathRequestId) {
+                        getThreadName(event.getThread());
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("event.getThread() = " + event.getThread());
+                            log.debug("tread name = " + getThreadName(event.getThread()));
+                        }
+
+                        rawOutputFile.println(
+                                SequentialNumberGenerator.getInstance().next() + " " +
+                                        simpleDateFormat.format(date) + " " +
+                                        event.getEventKind() + " " +
+                                        event.getThread()
+                        );
                         resumeThread(event.getThread());
                     }
                 }
@@ -119,7 +169,59 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             log.error("InterruptedException in run().", e);
         } catch (Exception e) {
             log.error("Exception in run().", e);
+        } finally {
+            if (rawOutputFile != null) {
+                rawOutputFile.close();
+            }
+            if (threadNamesFile != null) {
+                threadNamesFile.close();
+            }
+            if (classNamesFile != null) {
+                classNamesFile.close();
+            }
+            if (methodNamesFile != null) {
+                methodNamesFile.close();
+            }
         }
+    }
+
+    private EventModifier[] createModifiers() {
+        List<EventModifier> modifiersList = new ArrayList<>();
+        if (paramsParser.getClassMatch() != null) {
+            String[] patterns = paramsParser.getClassMatch().split(",");
+            for (String pattern : patterns) {
+                modifiersList.add(new ClassMatch(pattern));
+            }
+        }
+        if (paramsParser.getClassExclude() != null) {
+            String[] patterns = paramsParser.getClassExclude().split(",");
+            for (String pattern : patterns) {
+                modifiersList.add(new ClassExclude(pattern));
+            }
+        }
+        EventModifier[] res = new EventModifier[modifiersList.size()];
+        for (int i = 0; i < modifiersList.size(); i++) {
+            res[i] = modifiersList.get(i);
+        }
+        return res;
+    }
+
+    private void openFiles() throws FileNotFoundException {
+        String outputDirStr = "./" + paramsParser.getDirToStoreResultsTo();
+        if (paramsParser.isAppendHostPort()) {
+            outputDirStr += "_" + mainParams.getHost() + "_" + mainParams.getPort();
+        }
+        if (paramsParser.isAppendDateTime()) {
+            outputDirStr += "__" + new SimpleDateFormat("yyyy-MM-dd__HH_mm_ss").format(new Date());
+        }
+        File outputDir = new File(outputDirStr);
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+        rawOutputFile = new PrintStream(new File(outputDirStr + "/" + rawOutputFileName));
+        threadNamesFile = new PrintStream(new File(outputDirStr + "/" + threadNamesFileName));
+        classNamesFile = new PrintStream(new File(outputDirStr + "/" + classNamesFileName));
+        methodNamesFile = new PrintStream(new File(outputDirStr + "/" + methodNamesFileName));
     }
 
     private void resumeThread(ObjectId threadId) throws InterruptedException {
@@ -209,6 +311,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     )
             ).getName();
             threadNames.put(threadId, res);
+            threadNamesFile.println(threadId + " " + res);
+            threadNamesFile.flush();
         }
         return res;
     }
@@ -224,6 +328,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     )
             ).getSignature();
             classNames.put(classId, res);
+            classNamesFile.println(classId + " " + res);
+            classNamesFile.flush();
         }
         return res;
     }
@@ -236,10 +342,13 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     getReplyById(msgWriter.putMessage(new MethodsCommand(classId)))
             );
             for (MethodInfo methodInfo : mr.getMethods()) {
+                String methodNameAndSignature = methodInfo.getName() + methodInfo.getSignature();
                 methodsNames.put(
                         classId.toString() + methodInfo.getMethodId().toString(),
-                        methodInfo.getName() + methodInfo.getSignature()
+                        methodNameAndSignature
                 );
+                methodNamesFile.println(classId + " " + methodInfo.getMethodId() + " " + methodNameAndSignature);
+                methodNamesFile.flush();
             }
             res = methodsNames.get(key);
         }
