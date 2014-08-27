@@ -1,2 +1,1 @@
-set host=localhost
-set port=1044
+set arguments=-p 1044 trace-methods -o ""

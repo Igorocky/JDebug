@@ -1,9 +1,6 @@
-package org.igye.jdebug.debugprocessors;
+package org.igye.jdebug.debugprocessors.tracemethods;
 
-import org.igye.jdebug.ByteArrays;
-import org.igye.jdebug.DebugProcessor;
-import org.igye.jdebug.MessageReader;
-import org.igye.jdebug.MessageWriter;
+import org.igye.jdebug.*;
 import org.igye.jdebug.datatypes.impl.MethodId;
 import org.igye.jdebug.datatypes.impl.ObjectId;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
@@ -28,6 +25,9 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
     private MessageReader msgReader;
     private MessageWriter msgWriter;
+
+    private MainParams mainParams;
+    private TraceMethodsParamsParser paramsParser = new TraceMethodsParamsParser();
 
     private List<CommandPacket> commandsBuf = new ArrayList<>();
 
@@ -257,8 +257,20 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     }
 
     @Override
-    public void setWriterAndReader(MessageWriter messageWriter, MessageReader messageReader) {
+    public String getName() {
+        return "trace-methods";
+    }
+
+    @Override
+    public Object getParamsParser() {
+        return paramsParser;
+    }
+
+    @Override
+    public void init(MessageWriter messageWriter, MessageReader messageReader,
+                     MainParams mainParams) {
         this.msgWriter = messageWriter;
         this.msgReader = messageReader;
+        this.mainParams = mainParams;
     }
 }

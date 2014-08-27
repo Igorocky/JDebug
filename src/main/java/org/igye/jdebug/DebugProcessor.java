@@ -1,5 +1,8 @@
 package org.igye.jdebug;
 
 public interface DebugProcessor extends Runnable {
-    void setWriterAndReader(MessageWriter messageWriter, MessageReader messageReader);
+    String getName();
+    Object getParamsParser();
+    void init(MessageWriter messageWriter, MessageReader messageReader,
+              MainParams mainParams);
 }

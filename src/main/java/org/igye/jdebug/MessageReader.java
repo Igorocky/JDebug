@@ -1,6 +1,7 @@
 package org.igye.jdebug;
 
 import org.igye.jdebug.datatypes.JdwpDataTypeReader;
+import org.igye.jdebug.exceptions.DisconnectedFromRemoteJvm;
 import org.igye.jdebug.exceptions.EndOfStreamException;
 import org.igye.jdebug.exceptions.JDebugException;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
@@ -58,7 +59,7 @@ public class MessageReader implements Runnable {
     public JdwpMessage takeMessage() throws JDebugRuntimeException {
         while (true) {
             if (!isAlive && inMessages.isEmpty()) {
-                throw new JDebugRuntimeException("!isAlive && inMessages.isEmpty()");
+                throw new DisconnectedFromRemoteJvm("!isAlive && inMessages.isEmpty()");
             }
             try {
                 JdwpMessage res = inMessages.poll(1, TimeUnit.SECONDS);
