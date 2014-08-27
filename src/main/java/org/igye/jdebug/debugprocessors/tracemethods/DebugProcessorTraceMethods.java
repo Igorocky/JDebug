@@ -44,23 +44,39 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             EventModifier[] methodEnterExitModifiers = new EventModifier[] {
                     new ClassMatch("org.igye*")
             };
-            SuspendPolicy methodEnterExitSuspendPolicy = SuspendPolicy.EVENT_THREAD;
+            SuspendPolicy allEventsSuspendPolicy = SuspendPolicy.EVENT_THREAD;
             int methodEntryRequestId = new SetReply(getReplyById(
                     msgWriter.putMessage(new SetCommand(
                             EventKind.METHOD_ENTRY,
-                            methodEnterExitSuspendPolicy,
+                            allEventsSuspendPolicy,
                             methodEnterExitModifiers
                     ))
             )).getRequestId();
             System.out.println("methodEntryRequestId = " + methodEntryRequestId);
-            int methodExitRequestId = new SetReply(getReplyById(
+//            int methodExitRequestId = new SetReply(getReplyById(
+//                    msgWriter.putMessage(new SetCommand(
+//                            EventKind.METHOD_EXIT,
+//                            allEventsSuspendPolicy,
+//                            methodEnterExitModifiers
+//                    ))
+//            )).getRequestId();
+//            System.out.println("methodExitRequestId = " + methodExitRequestId);
+            int threadStartRequestId = new SetReply(getReplyById(
                     msgWriter.putMessage(new SetCommand(
-                            EventKind.METHOD_EXIT,
-                            methodEnterExitSuspendPolicy,
-                            methodEnterExitModifiers
+                            EventKind.THREAD_START,
+                            allEventsSuspendPolicy,
+                            null
                     ))
             )).getRequestId();
-            System.out.println("methodExitRequestId = " + methodExitRequestId);
+            System.out.println("threadStartRequestId = " + threadStartRequestId);
+            int threadDeathRequestId = new SetReply(getReplyById(
+                    msgWriter.putMessage(new SetCommand(
+                            EventKind.THREAD_DEATH,
+                            allEventsSuspendPolicy,
+                            null
+                    ))
+            )).getRequestId();
+            System.out.println("threadDeathRequestId = " + threadDeathRequestId);
 
             msgWriter.putMessage(new ResumeCommand());
 
@@ -75,7 +91,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     System.out.println("event.getEventKind() = " + ek);
                     System.out.println("event.getRequestId() = " + event.getRequestId());
                     if (event.getRequestId() == methodEntryRequestId
-                            || event.getRequestId() == methodExitRequestId) {
+                            /*|| event.getRequestId() == methodExitRequestId*/) {
                         System.out.println("event.getThread() = " + event.getThread());
                         System.out.println("tread name = " + getThreadName(event.getThread()));
                         System.out.println("event.getLocation() = " + event.getLocation());
@@ -83,6 +99,14 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         System.out.println("method = " + getMethodNameAndSignature(event.getLocation().getClassID(), event.getLocation().getMethodID()));
                         long codeIndex = ByteArrays.byteArrayToLong(event.getLocation().getIndex(), 0, 8);
                         System.out.println("line = " + getLineNumber(event.getLocation().getClassID(), event.getLocation().getMethodID(), codeIndex));
+                        resumeThread(event.getThread());
+                    } else if (event.getRequestId() == threadStartRequestId) {
+                        System.out.println("event.getThread() = " + event.getThread());
+                        System.out.println("tread name = " + getThreadName(event.getThread()));
+                        resumeThread(event.getThread());
+                    } else if (event.getRequestId() == threadDeathRequestId) {
+                        System.out.println("event.getThread() = " + event.getThread());
+                        System.out.println("tread name = " + getThreadName(event.getThread()));
                         resumeThread(event.getThread());
                     }
                 }
