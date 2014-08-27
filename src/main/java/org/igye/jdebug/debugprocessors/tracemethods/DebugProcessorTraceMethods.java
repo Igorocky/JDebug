@@ -117,18 +117,19 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         resumeThread(event.getThread());
 
                         Location location = event.getLocation();
-                        getThreadName(event.getThread());
-                        getClassSignature(location.getClassID());
-                        getMethodNameAndSignature(location.getClassID(), location.getMethodID());
-                        long codeIndex = ByteArrays.byteArrayToLong(location.getIndex(), 0, 8);
-                        int lineNumber = getLineNumber(location.getClassID(), location.getMethodID(), codeIndex);
-
                         if (log.isDebugEnabled()) {
                             log.debug("event.getThread() = " + event.getThread());
                             log.debug("tread name = " + getThreadName(event.getThread()));
                             log.debug("event.getLocation() = " + event.getLocation());
                             log.debug("class = " + getClassSignature(location.getClassID()));
                             log.debug("method = " + getMethodNameAndSignature(location.getClassID(), location.getMethodID()));
+                        }
+                        getThreadName(event.getThread());
+                        getClassSignature(location.getClassID());
+                        getMethodNameAndSignature(location.getClassID(), location.getMethodID());
+                        long codeIndex = ByteArrays.byteArrayToLong(location.getIndex(), 0, 8);
+                        int lineNumber = getLineNumber(location.getClassID(), location.getMethodID(), codeIndex);
+                        if (log.isDebugEnabled()) {
                             log.debug("line = " + lineNumber);
                         }
 
@@ -157,6 +158,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                         event.getEventKind() + " " +
                                         event.getThread()
                         );
+                        shortPause(500);
                         resumeThread(event.getThread());
                     }
                 }
@@ -253,11 +255,11 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         IdSizes.setObjectIDSize(idSizesReply.getObjectIDSize());
         IdSizes.setReferenceTypeIDSize(idSizesReply.getReferenceTypeIDSize());
 
-        System.out.println("IdSizes.getFieldIDSize() = " + IdSizes.getFieldIDSize());
-        System.out.println("IdSizes.getFrameIDSize() = " + IdSizes.getFrameIDSize());
-        System.out.println("IdSizes.getMethodIDSize() = " + IdSizes.getMethodIDSize());
-        System.out.println("IdSizes.getObjectIDSize() = " + IdSizes.getObjectIDSize());
-        System.out.println("IdSizes.getReferenceTypeIDSize() = " + IdSizes.getReferenceTypeIDSize());
+        log.debug("IdSizes.getFieldIDSize() = " + IdSizes.getFieldIDSize());
+        log.debug("IdSizes.getFrameIDSize() = " + IdSizes.getFrameIDSize());
+        log.debug("IdSizes.getMethodIDSize() = " + IdSizes.getMethodIDSize());
+        log.debug("IdSizes.getObjectIDSize() = " + IdSizes.getObjectIDSize());
+        log.debug("IdSizes.getReferenceTypeIDSize() = " + IdSizes.getReferenceTypeIDSize());
     }
 
     private ReplyPacket getReplyById(long id) throws InterruptedException {
@@ -363,19 +365,23 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         String key = leftPartOfKey + "_" + lineCodeIndex;
         Integer res = lineNumbers.get(key);
         if (res == null) {
-            LineTableReply ltr = new LineTableReply(
-                    getReplyById(
-                            msgWriter.putMessage(new LineTableCommand(
-                                    classId, methodId
-                            ))
-                    )
-            );
-            for (LineTableEntry entry : ltr.getLineTable()) {
-                String kk = leftPartOfKey + "_" + entry.getLineCodeIndex();
-                lineNumbers.put(
-                        leftPartOfKey + "_" + entry.getLineCodeIndex(),
-                        entry.getLineNumber()
+            if (lineCodeIndex == 0xffffffffffffffffL) {
+                lineNumbers.put(key, -2);
+            } else {
+                LineTableReply ltr = new LineTableReply(
+                        getReplyById(
+                                msgWriter.putMessage(new LineTableCommand(
+                                        classId, methodId
+                                ))
+                        )
                 );
+                for (LineTableEntry entry : ltr.getLineTable()) {
+                    String kk = leftPartOfKey + "_" + entry.getLineCodeIndex();
+                    lineNumbers.put(
+                            leftPartOfKey + "_" + entry.getLineCodeIndex(),
+                            entry.getLineNumber()
+                    );
+                }
             }
         }
         res = lineNumbers.get(key);
@@ -405,5 +411,13 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         this.msgWriter = messageWriter;
         this.msgReader = messageReader;
         this.mainParams = mainParams;
+    }
+
+    private void shortPause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 }

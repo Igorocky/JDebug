@@ -29,7 +29,7 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
             data = ((CommandPacket)commandOrReplyPacket).getData();
         } else if (commandOrReplyPacket.getClass() == ReplyPacket.class) {
             if (((ReplyPacket)commandOrReplyPacket).getErrorCode() != JdwpError.NONE.getCode()) {
-                throw new JDebugRuntimeException("ReplyPacket.getErrorCode() != NONE");
+                throw new JDebugRuntimeException("ReplyPacket.getErrorCode() != NONE, " + commandOrReplyPacket);
             }
             this.commandOrReplyPacket = commandOrReplyPacket;
             data = ((ReplyPacket)commandOrReplyPacket).getData();
