@@ -1,9 +1,11 @@
 package org.igye.jdebug.debugprocessors.tracemethods;
 
+import org.apache.commons.io.LineIterator;
 import org.igye.jdebug.*;
 import org.igye.jdebug.datatypes.impl.Location;
 import org.igye.jdebug.datatypes.impl.MethodId;
 import org.igye.jdebug.datatypes.impl.ObjectId;
+import org.igye.jdebug.exceptions.JDebugException;
 import org.igye.jdebug.exceptions.JDebugRuntimeException;
 import org.igye.jdebug.messages.EventModifier;
 import org.igye.jdebug.messages.JdwpMessage;
@@ -22,9 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DebugProcessorTraceMethods implements DebugProcessor {
     private static Logger log = LoggerFactory.getLogger(DebugProcessorTraceMethods.class);
@@ -42,6 +47,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private Map<String, String> methodsNames = new HashMap<>();
     private Map<String, Integer> lineNumbers = new HashMap<>();
 
+    private String outputDirStr;
     private PrintStream rawOutputFile;
     private String rawOutputFileName = "raw.txt";
     private PrintStream threadNamesFile;
@@ -50,6 +56,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private String classNamesFileName = "class_names.txt";
     private PrintStream methodNamesFile;
     private String methodNamesFileName = "method_names.txt";
+    private String threadsFileName = "threads.txt";
 
     @Override
     public void run() {
@@ -209,7 +216,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     }
 
     private void openFiles() throws FileNotFoundException {
-        String outputDirStr = "./" + paramsParser.getDirToStoreResultsTo();
+        outputDirStr = "./" + paramsParser.getDirToStoreResultsTo();
         if (paramsParser.isAppendHostPort()) {
             outputDirStr += "_" + mainParams.getHost() + "_" + mainParams.getPort();
         }
@@ -419,5 +426,121 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private void createFormattedOutput() throws FileNotFoundException, JDebugException {
+        PrintStream msgFile = null;
+        PrintStream threadsFile = null;
+        Map<String, PrintStream> filesForThreads = new HashMap<>();
+        try {
+            msgFile = new PrintStream(new File(outputDirStr + "/msg.txt"));
+            Map<String, String> threadNames = loadMap(threadNamesFileName, Pattern.compile("^(\\d)+ (.+)$"));
+            Map<String, String> classNames = loadMap(classNamesFileName, Pattern.compile("^(\\d)+ (.+)$"));
+            Map<String, String> methodNames = loadMap(methodNamesFileName, Pattern.compile("^(\\d+ \\d+) (.+)$"));
+            threadsFile = new PrintStream(new File(outputDirStr + "/" + threadsFileName));
+            LineIterator lineIter = new LineIterator(new FileReader(outputDirStr + "/" + rawOutputFileName));
+            Pattern pMethod = Pattern.compile("^(\\d)+ (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+) ([\\w\\d]+) ([\\w\\d]+) ([-\\d]+) ([-\\d]+)$");
+            Pattern pThread = Pattern.compile("^(\\d)+ (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+)$");
+            long lineNumber = 0;
+            while (lineIter.hasNext()) {
+                lineNumber++;
+                String line = lineIter.nextLine();
+                Matcher m = pMethod.matcher(line);
+                if (m.matches() && m.groupCount() == 8) {
+                    String eventNumber = m.group(1);
+                    String time = m.group(2);
+                    String eventKindStr = m.group(3);
+                    String threadId = m.group(4);
+                    String classId = m.group(5);
+                    String methodId = m.group(6);
+                    String codeIndex = m.group(7);
+                    String lineNumberStr = m.group(8);
+                    String message = null;
+                    EventKind eventKind = EventKind.getEventKindByCode(Integer.parseInt(eventKindStr));
+                    if (eventKind == EventKind.METHOD_ENTRY) {
+                        message = eventNumber + " " +
+                                time + " " +
+                                eventKind + " " +
+                                classNames.get(classId) + ":" +
+                                lineNumberStr + " " +
+                                methodNames.get(classId + " " + methodId) + " " +
+                                codeIndex;
+                    } else {
+                        message = eventNumber + " " +
+                                time + " " +
+                                eventKind + " " +
+                                classNames.get(classId) + ":" +
+                                lineNumberStr + " " +
+                                methodNames.get(classId + " " + methodId) + " " +
+                                codeIndex;
+                    }
+                    writeForThread(filesForThreads, threadId, msgFile, message);
+                } else {
+                    m = pThread.matcher(line);
+                    if (m.matches() && m.groupCount() == 4) {
+                        String eventNumber = m.group(1);
+                        String time = m.group(2);
+                        String eventKindStr = m.group(3);
+                        String threadId = m.group(4);
+                        threadsFile.println(
+                                eventNumber + " " +
+                                        time + " " +
+                                        EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)) + " " +
+                                        threadNames.get(threadId)
+                        );
+                    } else {
+                        msgFile.println("Error: can't match line '" + line + "' ln = " + lineNumber);
+                        return;
+                    }
+                }
+            }
+        } catch (JDebugException e) {
+            log.error(e.getMessage(), e);
+            msgFile.println("Error: " + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            msgFile.println("Error: " + e.getMessage());
+            throw e;
+        } finally {
+            if (msgFile != null) {
+                msgFile.close();
+            }
+            if (threadsFile != null) {
+                threadsFile.close();
+            }
+            for (PrintStream printStream : filesForThreads.values()) {
+                printStream.close();
+            }
+        }
+    }
+
+    private Map<String, String> loadMap(String fileName, Pattern twoGroupPattern) throws FileNotFoundException, JDebugException {
+        Map<String, String> res = new HashMap<>();
+        LineIterator lineIter = new LineIterator(new FileReader(outputDirStr + "/" + fileName));
+        long lineNumber = 0;
+        while (lineIter.hasNext()) {
+            lineNumber++;
+            String line = lineIter.nextLine();
+            Matcher m = twoGroupPattern.matcher(line);
+            if (m.matches() && m.groupCount() == 2) {
+                res.put(m.group(1), m.group(2));
+            } else {
+                throw new JDebugException("!m.matches() && m.groupCount() == 2. file = " + fileName + " line = '" + line + "' ln = " + lineNumber);
+            }
+        }
+        return res;
+    }
+
+    private void writeForThread(Map<String, PrintStream> filesForThreads, String threadId, PrintStream msgFile, String msg) throws FileNotFoundException {
+        PrintStream printStream = filesForThreads.get(threadId);
+        if (printStream == null) {
+            int fileNumber = filesForThreads.size() + 1;
+            String fileName = fileNumber + ".txt";
+            printStream = new PrintStream(new File(outputDirStr + "/" + fileName));
+            filesForThreads.put(threadId, printStream);
+            msgFile.println("Create file " + fileName + " for thread " + threadId);
+        }
+        printStream.println(msg);
     }
 }
