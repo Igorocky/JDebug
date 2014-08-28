@@ -511,11 +511,11 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     String message = null;
                     EventKind eventKind = EventKind.getEventKindByCode(Integer.parseInt(eventKindStr));
                     if (eventKind == EventKind.METHOD_ENTRY) {
-                        message = StringUtils.leftPad(" ", getStackSize(stacksForThreads, threadId)*4) +
+                        message = StringUtils.leftPad("", getStackSize(stacksForThreads, threadId)*4) +
                                 "{> " +
                                 eventNumber + " " +
                                 time + " " +
-                                eventKind + " " + classId + "_" + methodId + " " +
+                                classId + "_" + methodId + " " +
                                 classNames.get(classId) + ":" +
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
@@ -524,15 +524,15 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         push(stacksForThreads, threadId, classId, methodId);
                     } else {
                         while (!(classId + methodId).equals(pop(stacksForThreads, threadId))) {
-                            message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId) + 1)*4) +
+                            message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId))*4) +
                                     "< ??? }";
                             writeForThread(filesForThreads, threadId, msgFile, message);
                         }
-                        message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId) + 1)*4) +
+                        message = StringUtils.leftPad("", (getStackSize(stacksForThreads, threadId))*4) +
                                 "< " +
                                 eventNumber + " " +
                                 time + " " +
-                                eventKind + " " + classId + "_" + methodId + " " +
+                                classId + "_" + methodId + " " +
                                 classNames.get(classId) + ":" +
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
