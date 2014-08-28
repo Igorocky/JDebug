@@ -192,6 +192,14 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                 methodNamesFile.close();
             }
         }
+
+        try {
+            createFormattedOutput();
+        } catch (FileNotFoundException e) {
+            log.error(e.getMessage(), e);
+        } catch (JDebugException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     private EventModifier[] createModifiers() {
@@ -434,13 +442,13 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         Map<String, PrintStream> filesForThreads = new HashMap<>();
         try {
             msgFile = new PrintStream(new File(outputDirStr + "/msg.txt"));
-            Map<String, String> threadNames = loadMap(threadNamesFileName, Pattern.compile("^(\\d)+ (.+)$"));
-            Map<String, String> classNames = loadMap(classNamesFileName, Pattern.compile("^(\\d)+ (.+)$"));
-            Map<String, String> methodNames = loadMap(methodNamesFileName, Pattern.compile("^(\\d+ \\d+) (.+)$"));
+            Map<String, String> threadNames = loadMap(threadNamesFileName, Pattern.compile("^([\\w\\d]+) (.+)$"));
+            Map<String, String> classNames = loadMap(classNamesFileName, Pattern.compile("^([\\w\\d]+) (.+)$"));
+            Map<String, String> methodNames = loadMap(methodNamesFileName, Pattern.compile("^([\\w\\d]+ [\\w\\d]+) (.+)$"));
             threadsFile = new PrintStream(new File(outputDirStr + "/" + threadsFileName));
             LineIterator lineIter = new LineIterator(new FileReader(outputDirStr + "/" + rawOutputFileName));
-            Pattern pMethod = Pattern.compile("^(\\d)+ (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+) ([\\w\\d]+) ([\\w\\d]+) ([-\\d]+) ([-\\d]+)$");
-            Pattern pThread = Pattern.compile("^(\\d)+ (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+)$");
+            Pattern pMethod = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+) ([\\w\\d]+) ([\\w\\d]+) ([-\\d]+) ([-\\d]+)$");
+            Pattern pThread = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+)$");
             long lineNumber = 0;
             while (lineIter.hasNext()) {
                 lineNumber++;
@@ -460,7 +468,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     if (eventKind == EventKind.METHOD_ENTRY) {
                         message = eventNumber + " " +
                                 time + " " +
-                                eventKind + " " +
+                                eventKind + " " + classId + "_" + methodId + " " +
                                 classNames.get(classId) + ":" +
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
@@ -468,7 +476,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     } else {
                         message = eventNumber + " " +
                                 time + " " +
-                                eventKind + " " +
+                                eventKind + " " + classId + "_" + methodId + " " +
                                 classNames.get(classId) + ":" +
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
