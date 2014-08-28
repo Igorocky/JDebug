@@ -47,30 +47,34 @@ public class JDebug {
                 return;
             }
 
-            socket = new Socket(mainParams.getHost(), mainParams.getPort());
-            InputStream in = socket.getInputStream();
-            OutputStream out = socket.getOutputStream();
-            out.write("JDWP-Handshake".getBytes());
-            out.flush();
-            shortPause();
-            byte[] buf = new byte[BUFF_LEN];
-            int bytesRead = in.read(buf, 0, HANDSHAKE_ANSWER.length());
-            if (bytesRead != HANDSHAKE_ANSWER.length()) {
-                throw new JDebugException("bytesRead != HANDSHAKE_ANSWER.length()");
-            }
-            String ans = new String(buf, 0, HANDSHAKE_ANSWER.length());
-            if (!HANDSHAKE_ANSWER.equals(ans)) {
-                throw new JDebugException("!HANDSHAKE_ANSWER.equals(ans)");
-            }
-            writeInfoToConsoleAndLog("Connected to remote JVM.");
+            MessageReader messageReader = null;
+            MessageWriter messageWriter = null;
+            if (mainParams.getPort() != null) {
+                socket = new Socket(mainParams.getHost(), mainParams.getPort());
+                InputStream in = socket.getInputStream();
+                OutputStream out = socket.getOutputStream();
+                out.write("JDWP-Handshake".getBytes());
+                out.flush();
+                shortPause();
+                byte[] buf = new byte[BUFF_LEN];
+                int bytesRead = in.read(buf, 0, HANDSHAKE_ANSWER.length());
+                if (bytesRead != HANDSHAKE_ANSWER.length()) {
+                    throw new JDebugException("bytesRead != HANDSHAKE_ANSWER.length()");
+                }
+                String ans = new String(buf, 0, HANDSHAKE_ANSWER.length());
+                if (!HANDSHAKE_ANSWER.equals(ans)) {
+                    throw new JDebugException("!HANDSHAKE_ANSWER.equals(ans)");
+                }
+                writeInfoToConsoleAndLog("Connected to remote JVM.");
 
-            MessageReader messageReader = new MessageReader(in);
-            msgReaderThread = new Thread(messageReader, "MessageReader");
-            msgReaderThread.start();
+                messageReader = new MessageReader(in);
+                msgReaderThread = new Thread(messageReader, "MessageReader");
+                msgReaderThread.start();
 
-            MessageWriter messageWriter = new MessageWriter(out);
-            msgWriterThread = new Thread(messageWriter, "MessageWriter");
-            msgWriterThread.start();
+                messageWriter = new MessageWriter(out);
+                msgWriterThread = new Thread(messageWriter, "MessageWriter");
+                msgWriterThread.start();
+            }
 
             DebugProcessor proc = null;
             for (DebugProcessor debugProcessor : debugProcessors) {
@@ -87,8 +91,12 @@ public class JDebug {
             proc.init(messageWriter, messageReader, mainParams);
             proc.run();
 
-            msgReaderThread.interrupt();
-            msgWriterThread.interrupt();
+            if (msgReaderThread != null) {
+                msgReaderThread.interrupt();
+            }
+            if (msgWriterThread != null) {
+                msgWriterThread.interrupt();
+            }
         } catch (DisconnectedFromRemoteJvm e) {
             log.info(e.getMessage(), e);
         } catch (Exception e) {

@@ -28,6 +28,9 @@ public class TraceMethodsParamsParser {
             "Several patterns may be set comma separated.")
     private String classExclude;
 
+    @Parameter(names = "-d", description = "Do debug. Otherwise will do format output.")
+    private boolean doDebug;
+
     public String getDirToStoreResultsTo() {
         return dirToStoreResultsTo;
     }
@@ -46,5 +49,9 @@ public class TraceMethodsParamsParser {
 
     public String getClassExclude() {
         return classExclude;
+    }
+
+    public boolean doDebug() {
+        return doDebug;
     }
 }

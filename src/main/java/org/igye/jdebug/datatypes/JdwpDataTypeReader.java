@@ -13,6 +13,7 @@ import org.igye.jdebug.messages.core.IdSizes;
 import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.impl.ClassInfo;
 import org.igye.jdebug.messages.impl.Event;
+import org.igye.jdebug.messages.impl.FrameInfo;
 import org.igye.jdebug.messages.impl.MethodInfo;
 
 import java.io.DataInputStream;
@@ -85,6 +86,10 @@ public class JdwpDataTypeReader {
 
     public static ObjectId readObjectId(byte[] in, ArrayOffset offset) {
         return new ObjectId(ByteArrays.byteArrayToByteArray(in, offset, IdSizes.getObjectIDSize()));
+    }
+
+    public static FrameId readFrameId(byte[] in, ArrayOffset offset) {
+        return new FrameId(ByteArrays.byteArrayToByteArray(in, offset, IdSizes.getFrameIDSize()));
     }
 
     public static TaggedObjectId readTaggedObjectId(byte[] in, ArrayOffset offset) {
@@ -298,6 +303,13 @@ public class JdwpDataTypeReader {
                 readString(in, offset),
                 readString(in, offset),
                 readInt(in, offset)
+        );
+    }
+
+    public static FrameInfo readFrameInfo(byte[] in, ArrayOffset offset) {
+        return new FrameInfo(
+                readFrameId(in, offset),
+                readLocation(in, offset)
         );
     }
 }

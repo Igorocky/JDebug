@@ -1,6 +1,7 @@
 package org.igye.jdebug.debugprocessors.tracemethods;
 
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.StringUtils;
 import org.igye.jdebug.*;
 import org.igye.jdebug.datatypes.impl.Location;
 import org.igye.jdebug.datatypes.impl.MethodId;
@@ -42,6 +43,9 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
     private List<CommandPacket> commandsBuf = new ArrayList<>();
 
+    private Date date = new Date();
+    private SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+    private List<ObjectId> knownThreads = new ArrayList<>();
     private Map<ObjectId, String> threadNames = new HashMap<>();
     private Map<ObjectId, String> classNames = new HashMap<>();
     private Map<String, String> methodsNames = new HashMap<>();
@@ -60,13 +64,28 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
 
     @Override
     public void run() {
+        if (paramsParser.doDebug()) {
+            doDebug();
+        } else {
+            doFormatOutput();
+        }
+    }
+
+    private void doFormatOutput() {
+        try {
+            createFormattedOutput();
+        } catch (FileNotFoundException e) {
+            log.error(e.getMessage(), e);
+        } catch (JDebugException e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    private void doDebug() {
         try {
             initIdSizes();
             openFiles();
 
-//            EventModifier[] methodEnterExitModifiers = new EventModifier[] {
-//                    new ClassMatch("org.igye*")
-//            };
             EventModifier[] methodEnterExitModifiers = createModifiers();
             SuspendPolicy allEventsSuspendPolicy = SuspendPolicy.EVENT_THREAD;
             int threadStartRequestId = new SetReply(getReplyById(
@@ -105,8 +124,6 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             msgWriter.putMessage(new ResumeCommand());
 
             while (true) {
-                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-                Date date = new Date();
                 log.debug("-------------------------------");
                 CompositeCommand cmd = convertToCompositeCommand(getCommand());
                 if (log.isDebugEnabled()) {
@@ -121,37 +138,31 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     }
                     long requestId = event.getRequestId();
                     if (requestId == methodEntryRequestId || requestId == methodExitRequestId) {
+                        if (!knownThreads.contains(event.getThread())) {
+                            FrameInfo[] frames = getFrames(event.getThread());
+                            knownThreads.add(event.getThread());
+                            for (int i = frames.length - 1; i >= 0; i--) {
+                                FrameInfo frameInfo = frames[i];
+                                writeInfoAboutMethodEntryExitLocation(
+                                        EventKind.METHOD_ENTRY,
+                                        event.getThread(),
+                                        frameInfo.getLocation(),
+                                        true
+                                );
+                            }
+                        }
                         resumeThread(event.getThread());
 
-                        Location location = event.getLocation();
-                        if (log.isDebugEnabled()) {
-                            log.debug("event.getThread() = " + event.getThread());
-                            log.debug("tread name = " + getThreadName(event.getThread()));
-                            log.debug("event.getLocation() = " + event.getLocation());
-                            log.debug("class = " + getClassSignature(location.getClassID()));
-                            log.debug("method = " + getMethodNameAndSignature(location.getClassID(), location.getMethodID()));
-                        }
-                        getThreadName(event.getThread());
-                        getClassSignature(location.getClassID());
-                        getMethodNameAndSignature(location.getClassID(), location.getMethodID());
-                        long codeIndex = ByteArrays.byteArrayToLong(location.getIndex(), 0, 8);
-                        int lineNumber = getLineNumber(location.getClassID(), location.getMethodID(), codeIndex);
-                        if (log.isDebugEnabled()) {
-                            log.debug("line = " + lineNumber);
-                        }
-
-                        date.setTime(System.currentTimeMillis());
-                        rawOutputFile.println(
-                                SequentialNumberGenerator.getInstance().next() + " " +
-                                        simpleDateFormat.format(date) + " " +
-                                        (requestId == methodEntryRequestId ? EventKind.METHOD_ENTRY.getCode() : EventKind.METHOD_EXIT.getCode()) + " " +
-                                        event.getThread() + " " +
-                                        location.getClassID() + " " +
-                                        location.getMethodID() + " " +
-                                        codeIndex + " " +
-                                        lineNumber
+                        writeInfoAboutMethodEntryExitLocation(
+                                (requestId == methodEntryRequestId ? EventKind.METHOD_ENTRY : EventKind.METHOD_EXIT),
+                                event.getThread(),
+                                event.getLocation(),
+                                false
                         );
                     } else if (requestId == threadStartRequestId || requestId == threadDeathRequestId) {
+                        if (!knownThreads.contains(event.getThread())) {
+                            knownThreads.add(event.getThread());
+                        }
                         getThreadName(event.getThread());
 
                         if (log.isDebugEnabled()) {
@@ -170,8 +181,6 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     }
                 }
             }
-
-
         } catch (JDebugRuntimeException e) {
             throw e;
         } catch (InterruptedException e) {
@@ -192,14 +201,48 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                 methodNamesFile.close();
             }
         }
+    }
 
-        try {
-            createFormattedOutput();
-        } catch (FileNotFoundException e) {
-            log.error(e.getMessage(), e);
-        } catch (JDebugException e) {
-            log.error(e.getMessage(), e);
+    private void writeInfoAboutMethodEntryExitLocation(
+            EventKind eventKind, ObjectId threadId, Location location,
+            boolean isFromFrames) throws InterruptedException {
+        if (log.isDebugEnabled()) {
+            log.debug("event.getThread() = " + threadId);
+            log.debug("tread name = " + getThreadName(threadId));
+            log.debug("event.getLocation() = " + location);
+            log.debug("class = " + getClassSignature(location.getClassID()));
+            log.debug("method = " + getMethodNameAndSignature(location.getClassID(), location.getMethodID()));
         }
+        getThreadName(threadId);
+        getClassSignature(location.getClassID());
+        getMethodNameAndSignature(location.getClassID(), location.getMethodID());
+        long codeIndex = ByteArrays.byteArrayToLong(location.getIndex(), 0, 8);
+        int lineNumber = getLineNumber(location.getClassID(), location.getMethodID(), codeIndex);
+        if (log.isDebugEnabled()) {
+            log.debug("line = " + lineNumber);
+        }
+
+        date.setTime(System.currentTimeMillis());
+        rawOutputFile.println(
+                SequentialNumberGenerator.getInstance().next() + " " +
+                        simpleDateFormat.format(date) + (isFromFrames ? "*" : "") + " " +
+                        eventKind.getCode() + " " +
+                        threadId + " " +
+                        location.getClassID() + " " +
+                        location.getMethodID() + " " +
+                        codeIndex + " " +
+                        lineNumber
+        );
+    }
+
+    private FrameInfo[] getFrames(ObjectId thread) throws InterruptedException {
+        return new FramesReply(
+                getReplyById(
+                        msgWriter.putMessage(
+                                new FramesCommand(thread, 0, -1)
+                        )
+                )
+        ).getFrames();
     }
 
     private EventModifier[] createModifiers() {
@@ -437,9 +480,11 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     }
 
     private void createFormattedOutput() throws FileNotFoundException, JDebugException {
+        outputDirStr = paramsParser.getDirToStoreResultsTo();
         PrintStream msgFile = null;
         PrintStream threadsFile = null;
         Map<String, PrintStream> filesForThreads = new HashMap<>();
+        Map<String, Stack<String>> stacksForThreads = new HashMap<>();
         try {
             msgFile = new PrintStream(new File(outputDirStr + "/msg.txt"));
             Map<String, String> threadNames = loadMap(threadNamesFileName, Pattern.compile("^([\\w\\d]+) (.+)$"));
@@ -447,7 +492,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             Map<String, String> methodNames = loadMap(methodNamesFileName, Pattern.compile("^([\\w\\d]+ [\\w\\d]+) (.+)$"));
             threadsFile = new PrintStream(new File(outputDirStr + "/" + threadsFileName));
             LineIterator lineIter = new LineIterator(new FileReader(outputDirStr + "/" + rawOutputFileName));
-            Pattern pMethod = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+) ([\\w\\d]+) ([\\w\\d]+) ([-\\d]+) ([-\\d]+)$");
+            Pattern pMethod = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d\\*?) (\\d+) ([\\w\\d]+) ([\\w\\d]+) ([\\w\\d]+) ([-\\d]+) ([-\\d]+)$");
             Pattern pThread = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+)$");
             long lineNumber = 0;
             while (lineIter.hasNext()) {
@@ -466,23 +511,34 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     String message = null;
                     EventKind eventKind = EventKind.getEventKindByCode(Integer.parseInt(eventKindStr));
                     if (eventKind == EventKind.METHOD_ENTRY) {
-                        message = eventNumber + " " +
+                        message = StringUtils.leftPad(" ", getStackSize(stacksForThreads, threadId)*4) +
+                                "{> " +
+                                eventNumber + " " +
                                 time + " " +
                                 eventKind + " " + classId + "_" + methodId + " " +
                                 classNames.get(classId) + ":" +
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex;
+                        writeForThread(filesForThreads, threadId, msgFile, message);
+                        push(stacksForThreads, threadId, classId, methodId);
                     } else {
-                        message = eventNumber + " " +
+                        while (!(classId + methodId).equals(pop(stacksForThreads, threadId))) {
+                            message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId) + 1)*4) +
+                                    "< ??? }";
+                            writeForThread(filesForThreads, threadId, msgFile, message);
+                        }
+                        message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId) + 1)*4) +
+                                "< " +
+                                eventNumber + " " +
                                 time + " " +
                                 eventKind + " " + classId + "_" + methodId + " " +
                                 classNames.get(classId) + ":" +
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
-                                codeIndex;
+                                codeIndex + " }";
+                        writeForThread(filesForThreads, threadId, msgFile, message);
                     }
-                    writeForThread(filesForThreads, threadId, msgFile, message);
                 } else {
                     m = pThread.matcher(line);
                     if (m.matches() && m.groupCount() == 4) {
@@ -550,5 +606,33 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             msgFile.println("Create file " + fileName + " for thread " + threadId);
         }
         printStream.println(msg);
+    }
+
+    private void push(
+            Map<String, Stack<String>> stacksForThreads,
+            String threadId,
+            String classId, String methodId) {
+        Stack<String> stack = stacksForThreads.get(threadId);
+        if (stack == null) {
+            stack = new Stack<>();
+            stacksForThreads.put(threadId, stack);
+        }
+        stack.push(classId + methodId);
+    }
+
+    private String pop(Map<String, Stack<String>> stacksForThreads, String threadId) {
+        Stack<String> stack = stacksForThreads.get(threadId);
+        if (stack == null) {
+            throw new IllegalStateException("stack == null");
+        }
+        return stack.pop();
+    }
+
+    private int getStackSize(Map<String, Stack<String>> stacksForThreads, String threadId) {
+        Stack<String> stack = stacksForThreads.get(threadId.toString());
+        if (stack == null) {
+            return 0;
+        }
+        return stack.size();
     }
 }

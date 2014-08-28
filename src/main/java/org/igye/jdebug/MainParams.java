@@ -7,7 +7,7 @@ public class MainParams {
     @Parameter(names = "-h", description = "Remote host to attach to")
     private String host = "localhost";
 
-    @Parameter(names = "-p", description = "Remote port to attach to", required = true)
+    @Parameter(names = "-p", description = "Remote port to attach to")
     private Integer port;
 
     public String getHost() {

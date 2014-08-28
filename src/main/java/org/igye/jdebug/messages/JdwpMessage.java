@@ -9,6 +9,7 @@ import org.igye.jdebug.messages.core.CommandPacket;
 import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.impl.ClassInfo;
 import org.igye.jdebug.messages.impl.Event;
+import org.igye.jdebug.messages.impl.FrameInfo;
 import org.igye.jdebug.messages.impl.MethodInfo;
 
 public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes {
@@ -106,6 +107,13 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
             offset = new ArrayOffset();
         }
         return JdwpDataTypeReader.readMethodInfo(data, offset);
+    }
+
+    protected FrameInfo readFrameInfo() {
+        if (offset == null) {
+            offset = new ArrayOffset();
+        }
+        return JdwpDataTypeReader.readFrameInfo(data, offset);
     }
 
     @Override

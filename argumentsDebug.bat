@@ -1,0 +1,1 @@
+set arguments=-p 1044 trace-methods -d -o "trace_output" -cm org.igye*

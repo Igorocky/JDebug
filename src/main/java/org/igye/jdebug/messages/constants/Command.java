@@ -29,6 +29,7 @@ public enum Command {
     //THREAD_REFERENCE(11),
     THREAD_NAME(1),
     RESUME_THREAD(3),
+    FRAMES(6),
 
     //THREAD_GROUP_REFERENCE(12),
 

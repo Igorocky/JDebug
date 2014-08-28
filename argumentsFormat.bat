@@ -1,0 +1,1 @@
+set arguments=trace-methods -o "trace_output"
