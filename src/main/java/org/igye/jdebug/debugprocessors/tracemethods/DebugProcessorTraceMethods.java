@@ -141,7 +141,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         if (!knownThreads.contains(event.getThread())) {
                             FrameInfo[] frames = getFrames(event.getThread());
                             knownThreads.add(event.getThread());
-                            for (int i = frames.length - 1; i >= 0; i--) {
+                            for (int i = frames.length - 1; i >= (requestId == methodEntryRequestId ? 1 : 0); i--) {
                                 FrameInfo frameInfo = frames[i];
                                 writeInfoAboutMethodEntryExitLocation(
                                         EventKind.METHOD_ENTRY,
@@ -520,13 +520,27 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex;
-                        writeForThread(filesForThreads, threadId, msgFile, message);
+                        writeForThread(
+                                filesForThreads,
+                                threadId,
+                                threadNames.get(threadId),
+                                msgFile,
+                                message,
+                                null
+                        );
                         push(stacksForThreads, threadId, classId, methodId);
                     } else {
                         while (!(classId + methodId).equals(pop(stacksForThreads, threadId))) {
                             message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId))*4) +
                                     "< ??? }";
-                            writeForThread(filesForThreads, threadId, msgFile, message);
+                            writeForThread(
+                                    filesForThreads,
+                                    threadId,
+                                    threadNames.get(threadId),
+                                    msgFile,
+                                    message,
+                                    null
+                            );
                         }
                         message = StringUtils.leftPad("", (getStackSize(stacksForThreads, threadId))*4) +
                                 "< " +
@@ -537,7 +551,14 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex + " }";
-                        writeForThread(filesForThreads, threadId, msgFile, message);
+                        writeForThread(
+                                filesForThreads,
+                                threadId,
+                                threadNames.get(threadId),
+                                msgFile,
+                                message,
+                                null
+                        );
                     }
                 } else {
                     m = pThread.matcher(line);
@@ -546,11 +567,16 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         String time = m.group(2);
                         String eventKindStr = m.group(3);
                         String threadId = m.group(4);
-                        threadsFile.println(
+                        /*threadsFile.println(
                                 eventNumber + " " +
                                         time + " " +
                                         EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)) + " " +
                                         threadNames.get(threadId)
+                        );*/
+                        writeForThread(
+                                filesForThreads, threadId, threadNames.get(threadId),
+                                msgFile, null,
+                                "[" + eventNumber + "] " + time + " " + EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)).toString()
                         );
                     } else {
                         msgFile.println("Error: can't match line '" + line + "' ln = " + lineNumber);
@@ -596,16 +622,24 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         return res;
     }
 
-    private void writeForThread(Map<String, PrintStream> filesForThreads, String threadId, PrintStream msgFile, String msg) throws FileNotFoundException {
+    private void writeForThread(Map<String, PrintStream> filesForThreads,
+                                String threadId, String threadName,
+                                PrintStream msgFile,
+                                String msg,
+                                String threadEventKind) throws FileNotFoundException {
         PrintStream printStream = filesForThreads.get(threadId);
         if (printStream == null) {
             int fileNumber = filesForThreads.size() + 1;
             String fileName = fileNumber + ".txt";
             printStream = new PrintStream(new File(outputDirStr + "/" + fileName));
             filesForThreads.put(threadId, printStream);
-            msgFile.println("Create file " + fileName + " for thread " + threadId);
+            msgFile.println("Create file " + fileName + " for thread " + threadName +
+                    (threadEventKind != null ? threadEventKind : "")
+            );
         }
-        printStream.println(msg);
+        if (msg != null) {
+            printStream.println(msg);
+        }
     }
 
     private void push(
