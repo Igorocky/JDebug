@@ -507,6 +507,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     String eventKindStr = m.group(3);
                     String threadId = m.group(4);
                     String classId = m.group(5);
+                    String className = convertClassNameFromJniToNormal(classNames.get(classId));
                     String methodId = m.group(6);
                     String codeIndex = m.group(7);
                     String lineNumberStr = m.group(8);
@@ -517,9 +518,9 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 "{> " +
                                 eventNumber + " " +
                                 time + " " +
-                                classId + "_" + methodId + " " +
-                                classNames.get(classId) + ":" +
+                                className + ":" +
                                 lineNumberStr + " " +
+                                classId + "_" + methodId + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex;
                         writeForThread(
@@ -548,9 +549,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 "< " +
                                 eventNumber + " " +
                                 time + " " +
+                                className + ":" + lineNumberStr + " " +
                                 classId + "_" + methodId + " " +
-                                classNames.get(classId) + ":" +
-                                lineNumberStr + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex + " }";
                         writeForThread(
