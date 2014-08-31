@@ -567,16 +567,16 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                         String time = m.group(2);
                         String eventKindStr = m.group(3);
                         String threadId = m.group(4);
-                        /*threadsFile.println(
+                        threadsFile.println(
                                 eventNumber + " " +
                                         time + " " +
                                         EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)) + " " +
                                         threadNames.get(threadId)
-                        );*/
+                        );
                         writeForThread(
                                 filesForThreads, threadId, threadNames.get(threadId),
                                 msgFile, null,
-                                "[" + eventNumber + "] " + time + " " + EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)).toString()
+                                " [" + eventNumber + "] " + time + " " + EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)).toString()
                         );
                     } else {
                         msgFile.println("Error: can't match line '" + line + "' ln = " + lineNumber);
