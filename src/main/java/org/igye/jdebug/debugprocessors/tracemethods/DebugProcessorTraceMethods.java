@@ -62,6 +62,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private String methodNamesFileName = "method_names.txt";
     private String threadsFileName = "threads.txt";
 
+    private Pattern arrayPat = Pattern.compile("^L(.+);$");
+
     @Override
     public void run() {
         if (paramsParser.doDebug()) {
@@ -668,5 +670,13 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             return 0;
         }
         return stack.size();
+    }
+
+    protected String convertClassNameFromJniToNormal(String jniClassName) {
+        Matcher m = arrayPat.matcher(jniClassName);
+        if (!m.matches() || m.groupCount() != 1) {
+            log.error("!m.matches() || m.groupCount() != 1");
+        }
+        return m.group(1).replaceAll("/", ".");
     }
 }

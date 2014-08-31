@@ -62,7 +62,7 @@ public class JdwpDataTypeReaderTest {
                         1,2,3,4,5
                 }
         );
-        JdwpMessage msg = JdwpDataTypeReader.readMessage(new DataInputStream(in));
+        JdwpMessage msg = JdwpDataTypeReader.readMessage(new DataInputStream(in), false);
         assertTrue(msg.getClass() == ReplyPacket.class);
         ReplyPacket replyPacket = (ReplyPacket) msg;
         assertEquals(10, replyPacket.getId());

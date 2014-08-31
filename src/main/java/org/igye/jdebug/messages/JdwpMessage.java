@@ -25,11 +25,19 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
     }
 
     protected void setCommandOrReplyPacket(JdwpMessage commandOrReplyPacket) {
+        setCommandOrReplyPacket(commandOrReplyPacket, true);
+    }
+
+    protected void setCommandOrReplyPacket(JdwpMessage commandOrReplyPacket,
+                                           boolean throwExceptionOnNonZeroErrorCode) {
         if (commandOrReplyPacket.getClass() == CommandPacket.class) {
             this.commandOrReplyPacket = commandOrReplyPacket;
             data = ((CommandPacket)commandOrReplyPacket).getData();
         } else if (commandOrReplyPacket.getClass() == ReplyPacket.class) {
-            if (((ReplyPacket)commandOrReplyPacket).getErrorCode() != JdwpError.NONE.getCode()) {
+            if (
+                    throwExceptionOnNonZeroErrorCode
+                    && ((ReplyPacket)commandOrReplyPacket).getErrorCode() != JdwpError.NONE.getCode()
+               ) {
                 throw new JDebugRuntimeException("ReplyPacket.getErrorCode() != NONE, " + commandOrReplyPacket);
             }
             this.commandOrReplyPacket = commandOrReplyPacket;

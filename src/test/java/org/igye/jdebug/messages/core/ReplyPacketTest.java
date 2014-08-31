@@ -21,7 +21,7 @@ public class ReplyPacketTest {
         long id = 45;
         int errorCode = 7;
         byte[] data = new byte[] {1,2,3,4,5};
-        ReplyPacket replyPacket = new ReplyPacket(id, errorCode, data);
+        ReplyPacket replyPacket = new ReplyPacket(id, errorCode, data, false);
         byte[] res = replyPacket.toByteArray();
 
         assertEquals(16, res.length);
@@ -42,7 +42,7 @@ public class ReplyPacketTest {
         assertEquals(res[14], data[3]);
         assertEquals(res[15], data[4]);
 
-        replyPacket = new ReplyPacket(id, errorCode, null);
+        replyPacket = new ReplyPacket(id, errorCode, null, false);
         res = replyPacket.toByteArray();
 
         assertEquals(11, res.length);

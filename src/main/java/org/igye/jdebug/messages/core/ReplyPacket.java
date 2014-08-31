@@ -13,11 +13,20 @@ public class ReplyPacket extends JdwpMessage implements HasId {
     private byte[] data;
 
     public ReplyPacket(long id, int errorCode, byte[] data) {
+//        this.id = id;
+//        this.flags = 0x80;
+//        this.errorCode = errorCode;
+//        this.data = data;
+//        setCommandOrReplyPacket(this);
+        this(id, errorCode, data, true);
+    }
+
+    public ReplyPacket(long id, int errorCode, byte[] data, boolean throwExceptionOnNonZeroErrorCode) {
         this.id = id;
         this.flags = 0x80;
         this.errorCode = errorCode;
         this.data = data;
-        setCommandOrReplyPacket(this);
+        setCommandOrReplyPacket(this, throwExceptionOnNonZeroErrorCode);
     }
 
     @Override

@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class JdwpDataTypeReader {
-    public static JdwpMessage readMessage(DataInputStream in) throws IOException {
+    public static JdwpMessage readMessage(DataInputStream in, boolean throwExceptionOnNonZeroErrorCode) throws IOException {
         byte[] lengthArr = new byte[4];
         in.readFully(lengthArr);
         int length = (int) ByteArrays.fourByteArrayToLong(lengthArr);
@@ -41,10 +41,14 @@ public class JdwpDataTypeReader {
             return new CommandPacket(id, commandSet, command, data);
         } else if (flags == JdwpMessage.REPLY_FLAG) {
             int errorCode = (int) ByteArrays.byteArrayToLong(bytes, 5, 2);
-            return new ReplyPacket(id, errorCode, data);
+            return new ReplyPacket(id, errorCode, data, throwExceptionOnNonZeroErrorCode);
         } else {
             throw new JDebugRuntimeException("Unknown value in flags (" + flags + ")");
         }
+    }
+
+    public static JdwpMessage readMessage(DataInputStream in) throws IOException {
+        return readMessage(in, true);
     }
 
     public static String readString(byte[] in, int offset) {
