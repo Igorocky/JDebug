@@ -668,7 +668,9 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         renderer.setBaseShapesVisible(true);
         renderer.setBaseShapesFilled(true);
         ImageIO.write(
-                chart.createBufferedImage(500, 500),
+                chart.createBufferedImage(
+                        paramsParser.getChartWidth(), paramsParser.getChartHeight()
+                ),
                 "png",
                 new File(outputDirStr + "/chart.png")
         );

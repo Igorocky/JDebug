@@ -31,6 +31,12 @@ public class TraceMethodsParamsParser {
     @Parameter(names = "-d", description = "Do debug. Otherwise will do format output.")
     private boolean doDebug;
 
+    @Parameter(names = "-wi", description = "Chart width.")
+    private int chartWidth = 800;
+
+    @Parameter(names = "-hi", description = "Chart height.")
+    private int chartHeight = 500;
+
     public String getDirToStoreResultsTo() {
         return dirToStoreResultsTo;
     }
@@ -53,5 +59,13 @@ public class TraceMethodsParamsParser {
 
     public boolean doDebug() {
         return doDebug;
+    }
+
+    public int getChartWidth() {
+        return chartWidth;
+    }
+
+    public int getChartHeight() {
+        return chartHeight;
     }
 }
