@@ -20,13 +20,22 @@ import org.igye.jdebug.messages.core.ReplyPacket;
 import org.igye.jdebug.messages.eventmodifiers.ClassExclude;
 import org.igye.jdebug.messages.eventmodifiers.ClassMatch;
 import org.igye.jdebug.messages.impl.*;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.renderer.xy.XYSplineRenderer;
+import org.jfree.data.general.DatasetGroup;
+import org.jfree.data.xy.DefaultXYDataset;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.PrintStream;
+import javax.imageio.ImageIO;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -76,9 +85,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
     private void doFormatOutput() {
         try {
             createFormattedOutput();
-        } catch (FileNotFoundException e) {
-            log.error(e.getMessage(), e);
-        } catch (JDebugException e) {
+        } catch (JDebugException | IOException e) {
             log.error(e.getMessage(), e);
         }
     }
@@ -481,12 +488,12 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         }
     }
 
-    private void createFormattedOutput() throws FileNotFoundException, JDebugException {
+    private void createFormattedOutput() throws IOException, JDebugException {
         outputDirStr = paramsParser.getDirToStoreResultsTo();
         PrintStream msgFile = null;
         PrintStream threadsFile = null;
-        Map<String, PrintStream> filesForThreads = new HashMap<>();
-        Map<String, Stack<String>> stacksForThreads = new HashMap<>();
+        Map<String, ThreadData> threadsData = new HashMap<>();
+        Float firstTime = null;
         try {
             msgFile = new PrintStream(new File(outputDirStr + "/msg.txt"));
             Map<String, String> threadNames = loadMap(threadNamesFileName, Pattern.compile("^([\\w\\d]+) (.+)$"));
@@ -496,6 +503,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             LineIterator lineIter = new LineIterator(new FileReader(outputDirStr + "/" + rawOutputFileName));
             Pattern pMethod = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d\\*?) (\\d+) ([\\w\\d]+) ([\\w\\d]+) ([\\w\\d]+) ([-\\d]+) ([-\\d]+)$");
             Pattern pThread = Pattern.compile("^(\\d+) (\\d\\d:\\d\\d:\\d\\d\\.\\d\\d\\d) (\\d+) ([\\w\\d]+)$");
+            Pattern pTime = Pattern.compile("^(\\d\\d):(\\d\\d):(\\d\\d\\.\\d\\d\\d)\\*?$");
             long lineNumber = 0;
             while (lineIter.hasNext()) {
                 lineNumber++;
@@ -514,7 +522,14 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                     String message = null;
                     EventKind eventKind = EventKind.getEventKindByCode(Integer.parseInt(eventKindStr));
                     if (eventKind == EventKind.METHOD_ENTRY) {
-                        message = StringUtils.leftPad("", getStackSize(stacksForThreads, threadId)*4) +
+                        createThreadData(
+                                threadsData,
+                                threadId,
+                                threadNames,
+                                msgFile,
+                                null
+                        );
+                        message = StringUtils.leftPad("", getStackSize(threadsData, threadId)*4) +
                                 "{> " +
                                 eventNumber + " " +
                                 time + " " +
@@ -524,28 +539,38 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex;
                         writeForThread(
-                                filesForThreads,
+                                threadsData,
                                 threadId,
-                                threadNames.get(threadId),
+                                message
+                        );
+                        push(threadsData, threadId, classId, methodId);
+                        Matcher timeMatcher = pTime.matcher(time);
+                        timeMatcher.matches();
+                        Float timeFloat = Float.parseFloat(timeMatcher.group(1))*60*60 +
+                                Float.parseFloat(timeMatcher.group(2))*60 +
+                                Float.parseFloat(timeMatcher.group(3));
+                        if (firstTime == null) {
+                            firstTime = timeFloat;
+                        }
+                        threadsData.get(threadId).getEventTimes().add(timeFloat - firstTime);
+                    } else {
+                        createThreadData(
+                                threadsData,
+                                threadId,
+                                threadNames,
                                 msgFile,
-                                message,
                                 null
                         );
-                        push(stacksForThreads, threadId, classId, methodId);
-                    } else {
-                        while (!(classId + methodId).equals(pop(stacksForThreads, threadId))) {
-                            message = StringUtils.leftPad(" ", (getStackSize(stacksForThreads, threadId))*4) +
+                        while (!(classId + methodId).equals(pop(threadsData, threadId))) {
+                            message = StringUtils.leftPad(" ", (getStackSize(threadsData, threadId))*4) +
                                     "< ??? }";
                             writeForThread(
-                                    filesForThreads,
+                                    threadsData,
                                     threadId,
-                                    threadNames.get(threadId),
-                                    msgFile,
-                                    message,
-                                    null
+                                    message
                             );
                         }
-                        message = StringUtils.leftPad("", (getStackSize(stacksForThreads, threadId))*4) +
+                        message = StringUtils.leftPad("", (getStackSize(threadsData, threadId))*4) +
                                 "< " +
                                 eventNumber + " " +
                                 time + " " +
@@ -554,13 +579,19 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 methodNames.get(classId + " " + methodId) + " " +
                                 codeIndex + " }";
                         writeForThread(
-                                filesForThreads,
+                                threadsData,
                                 threadId,
-                                threadNames.get(threadId),
-                                msgFile,
-                                message,
-                                null
+                                message
                         );
+                        Matcher timeMatcher = pTime.matcher(time);
+                        timeMatcher.matches();
+                        Float timeFloat = Float.parseFloat(timeMatcher.group(1))*60*60 +
+                                Float.parseFloat(timeMatcher.group(2))*60 +
+                                Float.parseFloat(timeMatcher.group(3));
+                        if (firstTime == null) {
+                            firstTime = timeFloat;
+                        }
+                        threadsData.get(threadId).getEventTimes().add(timeFloat - firstTime);
                     }
                 } else {
                     m = pThread.matcher(line);
@@ -575,9 +606,11 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                         EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)) + " " +
                                         threadNames.get(threadId)
                         );
-                        writeForThread(
-                                filesForThreads, threadId, threadNames.get(threadId),
-                                msgFile, null,
+                        createThreadData(
+                                threadsData,
+                                threadId,
+                                threadNames,
+                                msgFile,
                                 " [" + eventNumber + "] " + time + " " + EventKind.getEventKindByCode(Integer.parseInt(eventKindStr)).toString()
                         );
                     } else {
@@ -601,10 +634,44 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             if (threadsFile != null) {
                 threadsFile.close();
             }
-            for (PrintStream printStream : filesForThreads.values()) {
-                printStream.close();
+            for (ThreadData threadData : threadsData.values()) {
+                threadData.getPrintStream().close();
             }
         }
+
+        XYSeriesCollection data = new XYSeriesCollection();
+        int threadNumber = 0;
+        for (ThreadData threadData : threadsData.values()) {
+            threadNumber++;
+            XYSeries threadSeries = new XYSeries(threadData.getName() +
+                    "[" + threadData.getId() + "]");
+            for (Float time : threadData.getEventTimes()) {
+                threadSeries.add(time.doubleValue(), threadNumber);
+            }
+            data.addSeries(threadSeries);
+        }
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "Threads dynamic",
+                "time, s",
+                "thread",
+                data,
+                PlotOrientation.VERTICAL,
+                true,
+                true,
+                true
+        );
+        XYPlot plot = chart.getXYPlot();
+        XYLineAndShapeRenderer renderer =
+                new XYLineAndShapeRenderer(true, true);
+        plot.setRenderer(renderer);
+        renderer.setBaseShapesVisible(true);
+        renderer.setBaseShapesFilled(true);
+        ImageIO.write(
+                chart.createBufferedImage(500, 500),
+                "png",
+                new File(outputDirStr + "/chart.png")
+        );
     }
 
     private Map<String, String> loadMap(String fileName, Pattern twoGroupPattern) throws FileNotFoundException, JDebugException {
@@ -624,48 +691,42 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
         return res;
     }
 
-    private void writeForThread(Map<String, PrintStream> filesForThreads,
-                                String threadId, String threadName,
+    private void createThreadData(Map<String, ThreadData> threadsData,
+                                String threadId, Map<String, String> threadNames,
                                 PrintStream msgFile,
-                                String msg,
                                 String threadEventKind) throws FileNotFoundException {
-        PrintStream printStream = filesForThreads.get(threadId);
-        if (printStream == null) {
-            int fileNumber = filesForThreads.size() + 1;
+        ThreadData threadData = threadsData.get(threadId);
+        if (threadData == null) {
+            int fileNumber = threadsData.size() + 1;
             String fileName = fileNumber + ".txt";
-            printStream = new PrintStream(new File(outputDirStr + "/" + fileName));
-            filesForThreads.put(threadId, printStream);
-            msgFile.println("Create file " + fileName + " for thread " + threadName +
-                    (threadEventKind != null ? threadEventKind : "")
+            threadData = new ThreadData(threadId, threadNames.get(threadId),
+                    new PrintStream(new File(outputDirStr + "/" + fileName)));
+            threadsData.put(threadId, threadData);
+            msgFile.println("Create file " + fileName + " for thread " + threadData.getName() +
+                            (threadEventKind != null ? threadEventKind : "")
             );
         }
-        if (msg != null) {
-            printStream.println(msg);
-        }
+    }
+
+    private void writeForThread(Map<String, ThreadData> threadsData,
+                                String threadId,
+                                String msg) throws FileNotFoundException {
+        threadsData.get(threadId).getPrintStream().println(msg);
     }
 
     private void push(
-            Map<String, Stack<String>> stacksForThreads,
+            Map<String, ThreadData> threadsData,
             String threadId,
             String classId, String methodId) {
-        Stack<String> stack = stacksForThreads.get(threadId);
-        if (stack == null) {
-            stack = new Stack<>();
-            stacksForThreads.put(threadId, stack);
-        }
-        stack.push(classId + methodId);
+        threadsData.get(threadId).getStack().push(classId + methodId);
     }
 
-    private String pop(Map<String, Stack<String>> stacksForThreads, String threadId) {
-        Stack<String> stack = stacksForThreads.get(threadId);
-        if (stack == null) {
-            throw new IllegalStateException("stack == null");
-        }
-        return stack.pop();
+    private String pop(Map<String, ThreadData> threadsData, String threadId) {
+        return threadsData.get(threadId).getStack().pop();
     }
 
-    private int getStackSize(Map<String, Stack<String>> stacksForThreads, String threadId) {
-        Stack<String> stack = stacksForThreads.get(threadId.toString());
+    private int getStackSize(Map<String, ThreadData> threadsData, String threadId) {
+        Stack<String> stack = threadsData.get(threadId.toString()).getStack();
         if (stack == null) {
             return 0;
         }

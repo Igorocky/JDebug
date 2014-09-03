@@ -1,1 +1,1 @@
-set arguments=trace-methods -o "trace_output__2014-08-31__05_57_45"
+set arguments=trace-methods -o "trace_output"
