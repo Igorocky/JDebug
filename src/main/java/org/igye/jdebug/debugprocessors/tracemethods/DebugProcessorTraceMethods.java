@@ -535,8 +535,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 time + " " +
                                 className + ":" +
                                 lineNumberStr + " " +
-                                classId + "_" + methodId + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
+                                classId + "_" + methodId + " " +
                                 codeIndex;
                         writeForThread(
                                 threadsData,
@@ -575,8 +575,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
                                 eventNumber + " " +
                                 time + " " +
                                 className + ":" + lineNumberStr + " " +
-                                classId + "_" + methodId + " " +
                                 methodNames.get(classId + " " + methodId) + " " +
+                                classId + "_" + methodId + " " +
                                 codeIndex + " }";
                         writeForThread(
                                 threadsData,
