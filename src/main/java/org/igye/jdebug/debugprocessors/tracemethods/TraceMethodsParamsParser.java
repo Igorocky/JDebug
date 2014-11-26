@@ -28,7 +28,7 @@ public class TraceMethodsParamsParser {
             "Several patterns may be set comma separated.")
     private String classExclude;
 
-    @Parameter(names = "-d", description = "Do debug. Otherwise will do format output.")
+    @Parameter(names = "-d", description = "Do debug. Otherwise will format output.")
     private boolean doDebug;
 
     @Parameter(names = "-wi", description = "Chart width.")

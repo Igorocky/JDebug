@@ -63,65 +63,49 @@ public abstract class JdwpMessage implements HasId, RepresentableAsArrayOfBytes 
     }
 
     protected String readString() {
-        /*if (data == null) {
-            return null;
-        }*/
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readString(data, offset);
     }
 
     protected int readInt() {
-        /*if (data == null) {
-            return 0;
-        }*/
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readInt(data, offset);
     }
 
     protected byte readByte() {
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readByte(data, offset);
     }
 
     protected long readLong() {
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readLong(data, offset);
     }
 
     protected Event readEvent() {
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readEvent(data, offset);
     }
 
     protected ClassInfo readClassInfo() {
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readClassInfo(data, offset);
     }
 
     protected MethodInfo readMethodInfo() {
-        if (offset == null) {
-            offset = new ArrayOffset();
-        }
+        createOffsetIfNecessary();
         return JdwpDataTypeReader.readMethodInfo(data, offset);
     }
 
     protected FrameInfo readFrameInfo() {
+        createOffsetIfNecessary();
+        return JdwpDataTypeReader.readFrameInfo(data, offset);
+    }
+
+    private void createOffsetIfNecessary() {
         if (offset == null) {
             offset = new ArrayOffset();
         }
-        return JdwpDataTypeReader.readFrameInfo(data, offset);
     }
 
     @Override

@@ -47,7 +47,7 @@ public class TaggedObjectId implements JdwpDataType {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof ObjectId)) {
+        if (!(obj instanceof TaggedObjectId)) {
             return false;
         }
         TaggedObjectId other = (TaggedObjectId) obj;

@@ -53,7 +53,7 @@ public class JDebug {
                 socket = new Socket(mainParams.getHost(), mainParams.getPort());
                 InputStream in = socket.getInputStream();
                 OutputStream out = socket.getOutputStream();
-                out.write("JDWP-Handshake".getBytes());
+                out.write(HANDSHAKE_ANSWER.getBytes());
                 out.flush();
                 shortPause();
                 byte[] buf = new byte[BUFF_LEN];

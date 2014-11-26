@@ -41,7 +41,7 @@ public class FieldId implements JdwpDataType {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof ObjectId)) {
+        if (!(obj instanceof FieldId)) {
             return false;
         }
         FieldId other = (FieldId) obj;

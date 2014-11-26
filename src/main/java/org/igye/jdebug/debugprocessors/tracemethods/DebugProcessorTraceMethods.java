@@ -687,7 +687,7 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             if (m.matches() && m.groupCount() == 2) {
                 res.put(m.group(1), m.group(2));
             } else {
-                throw new JDebugException("!m.matches() && m.groupCount() == 2. file = " + fileName + " line = '" + line + "' ln = " + lineNumber);
+                throw new JDebugException("!(m.matches() && m.groupCount() == 2). file = " + fileName + " line = '" + line + "' ln = " + lineNumber);
             }
         }
         return res;

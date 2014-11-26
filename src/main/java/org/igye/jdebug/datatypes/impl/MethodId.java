@@ -41,7 +41,7 @@ public class MethodId implements JdwpDataType {
         if (obj == null) {
             return false;
         }
-        if (!(obj instanceof ObjectId)) {
+        if (!(obj instanceof MethodId)) {
             return false;
         }
         MethodId other = (MethodId) obj;
