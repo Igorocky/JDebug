@@ -623,6 +623,8 @@ public class DebugProcessorTraceMethods implements DebugProcessor {
             log.error(e.getMessage(), e);
             if (msgFile != null) {
                 msgFile.println("Error: " + e.getMessage());
+            } else {
+                throw new RuntimeException("msgFile == null");
             }
             throw e;
         } catch (Exception e) {
